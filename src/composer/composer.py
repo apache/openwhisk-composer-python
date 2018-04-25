@@ -55,56 +55,103 @@ class Composition:
     def __str__(self):
         return json.dumps(self.__dict__, indent=2, default=serialize)
 
-def empty():
-    return _compose('empty', ())
+class Compiler:
+    def empty(self):
+        return self._compose('empty', ())
 
-def seq(*arguments):
-    return _compose('seq', arguments)
+    def seq(self, *arguments):
+        return self._compose('seq', arguments)
 
-def sequence(*arguments):
-    return _compose('sequence', arguments)
+    def sequence(self, *arguments):
+        return self._compose('sequence', arguments)
 
-def action(*arguments):
-    return _compose('action', arguments)
+    def action(self, *arguments):
+        return self._compose('action', arguments)
 
-def task(task):
-    """detect task type and create corresponding composition object"""
-    if task is None:
-        return empty()
+    def task(self, task):
+        """detect task type and create corresponding composition object"""
+        if task is None:
+            return self.empty()
 
-    if isinstance(task, Composition):
-        return task
+        if isinstance(task, Composition):
+            return task
 
-    # if (typeof task === 'function') return this.function(task)
+        # if (typeof task === 'function') return this.function(task)
 
-    if isinstance(task, str): # python3 only
-        return action(task)
+        if isinstance(task, str): # python3 only
+            return self.action(task)
 
-    raise ComposerError('Invalid argument', task)
+        raise ComposerError('Invalid argument', task)
 
-def _compose(type_, arguments):
-    combinator = combinators[type_]
-    skip = len(combinator['args']) if 'args' in combinator else 0
-    if 'components' not in combinator and len(arguments) > skip:
-        raise ComposerError('Too many arguments')
+    def _compose(self, type_, arguments):
+        combinator = combinators[type_]
+        skip = len(combinator['args']) if 'args' in combinator else 0
+        if 'components' not in combinator and len(arguments) > skip:
+            raise ComposerError('Too many arguments')
 
-    composition = Composition(type_)
+        composition = Composition(type_)
 
-    # process named arguments
-    for i in range(skip):
-        arg = combinator['args'][i]
-        argument = arguments[i] if len(arguments) > i else None
+        # process declared arguments
+        for i in range(skip):
+            arg = combinator['args'][i]
+            argument = arguments[i] if len(arguments) > i else None
 
-        if 'type' not in arg:
-            setattr(composition, arg['_'], task(argument))
-        elif arg['type'] == 'value':
-            # if (typeof argument === 'function') throw new ComposerError('Invalid argument', argument)
-            setattr(composition, arg['_'], argument)
-        else:
-            setattr(composition, arg['_'], argument)
+            if 'type' not in arg:
+                setattr(composition, arg['_'], self.task(argument))
+            elif arg['type'] == 'value':
+                # if (typeof argument === 'function') throw new ComposerError('Invalid argument', argument)
+                setattr(composition, arg['_'], argument)
+            else:
+                setattr(composition, arg['_'], argument)
 
-    if 'components' in combinator:
-        setattr(composition, 'components', tuple(map(lambda obj: task(obj), arguments)))
+        if 'components' in combinator:
+            setattr(composition, 'components', tuple(map(lambda obj: self.task(obj), arguments)))
 
+        return composition
 
-    return composition
+def parse_action_name(name):
+    """
+      Parses a (possibly fully qualified) resource name and validates it. If it's not a fully qualified name,
+      then attempts to qualify it.
+
+      Examples string to namespace, [package/]action name
+        foo => /_/foo
+        pkg/foo => /_/pkg/foo
+        /ns/foo => /ns/foo
+        /ns/pkg/foo => /ns/pkg/foo
+    """
+    name = name.strip()
+    if len(name) == 0:
+        raise ComposerError("Name is not specified")
+
+    delimiter = '/'
+    parts = name.split(delimiter)
+    n = len(parts)
+    leadingSlash = name[0] == delimiter if len(name) > 0 else False
+    # no more than /ns/p/a
+    if n < 1 or n > 4 or (leadingSlash and n == 2) or (not leadingSlash and n == 4):
+        raise ComposerError("Name is not valid")
+
+    # skip leading slash, all parts must be non empty (could tighten this check to match EntityName regex)
+    for part in parts[1:]:
+        if len(part.strip()) == 0:
+            raise ComposerError("Name is not valid")
+
+    newName = delimiter.join(parts)
+    if leadingSlash:
+        return newName
+    elif n < 3:
+        return delimiter+"_"+delimiter+newName
+    else:
+        return delimiter+newName
+
+# class Composer(Compiler):
+#         def action(self, name, options):
+#             """ enhanced action combinator: mangle name, capture code """
+
+#             name = parseActionName(name)
+            # let exec
+
+            # const composition = { type: 'action', name }
+            # if (exec) composition.action = { exec }
+            # return new Composition(composition)
