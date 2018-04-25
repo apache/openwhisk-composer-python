@@ -6,3 +6,6 @@ _composer = Compiler()
 
 def sequence(*arguments):
     return _composer.sequence(*arguments)
+
+def literal(value):
+    return _composer.literal(value)

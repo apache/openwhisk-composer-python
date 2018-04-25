@@ -44,7 +44,6 @@ class ComposerError(Exception):
        self.message = message
        self.argument = arguments
 
-
 def serialize(obj):
     return obj.__dict__
 
@@ -56,6 +55,9 @@ class Composition:
         return json.dumps(self.__dict__, indent=2, default=serialize)
 
 class Compiler:
+    def literal(self, value):
+        return self._compose('literal', (value,))
+
     def empty(self):
         return self._compose('empty', ())
 
@@ -99,7 +101,8 @@ class Compiler:
             if 'type' not in arg:
                 setattr(composition, arg['_'], self.task(argument))
             elif arg['type'] == 'value':
-                # if (typeof argument === 'function') throw new ComposerError('Invalid argument', argument)
+                if type(argument).__name__ == 'function':
+                    raise ComposerError('Invalid argument', argument)
                 setattr(composition, arg['_'], argument)
             else:
                 setattr(composition, arg['_'], argument)
@@ -146,12 +149,12 @@ def parse_action_name(name):
         return delimiter+newName
 
 # class Composer(Compiler):
-#         def action(self, name, options):
-#             """ enhanced action combinator: mangle name, capture code """
+#   def action(self, name, options):
+#     """ enhanced action combinator: mangle name, capture code """
 
 #             name = parseActionName(name)
-            # let exec
+# let exec
 
-            # const composition = { type: 'action', name }
-            # if (exec) composition.action = { exec }
-            # return new Composition(composition)
+# const composition = { type: 'action', name }
+# if (exec) composition.action = { exec }
+# return new Composition(composition)
