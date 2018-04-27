@@ -69,7 +69,7 @@ class Composition:
 
         combinator = combinators[getattr(self, 'type')]
         if 'components' in combinator:
-            self.components = tuple(map(f, self.components))
+            self.components = tuple(map(lambda c: f(c, None), self.components))
 
         if 'args' in combinator:
             for arg in combinator['args']:

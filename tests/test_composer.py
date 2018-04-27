@@ -94,7 +94,6 @@ class TestLiteral:
         except composer.ComposerError as error:
             assert error.message == 'Invalid argument'
 
-@pytest.mark.function
 @pytest.mark.skip(reason='need python conductor')
 class TestFunction:
 
@@ -125,3 +124,20 @@ class TestTasks:
         except Exception as error:
             print(error)
 
+class TestSequence:
+
+    def test_flat(self):
+        activation = invoke(composer.sequence('TripleAndIncrement', 'DivideByTwo', 'DivideByTwo'), { 'n': 5 })
+        assert activation['response']['result'] == { 'n': 4 }
+
+    def test_nested_right(self):
+        activation = invoke(composer.sequence('TripleAndIncrement', composer.sequence('DivideByTwo', 'DivideByTwo')), { 'n': 5 })
+        assert activation['response']['result'] == { 'n': 4 }
+
+    def test_nested_left(self):
+        activation = invoke(composer.sequence(composer.sequence('TripleAndIncrement', 'DivideByTwo'), 'DivideByTwo'), { 'n': 5 })
+        assert activation['response']['result'] == { 'n': 4 }
+
+    def test_seq(self):
+        activation = invoke(composer.seq('TripleAndIncrement', 'DivideByTwo', 'DivideByTwo'), { 'n': 5 })
+        assert activation['response']['result'] == { 'n': 4 }

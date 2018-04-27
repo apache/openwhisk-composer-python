@@ -4,9 +4,11 @@ from .composer import Composer, ComposerError, parse_action_name
 
 _composer = Composer()
 
-
 def composition(name, task):
     return _composer.composition(name, task)
+
+def seq(*arguments):
+    return _composer.sequence(*arguments)
 
 def sequence(*arguments):
     return _composer.sequence(*arguments)
