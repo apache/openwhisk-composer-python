@@ -55,8 +55,8 @@ class TestLiteral:
         assert activation['response']['result'] == { 'value': True }
 
     def test_number(self):
-        composition = composer.literal(42)
-        # print(composition)
+        activation = invoke(composer.literal(42))
+        assert activation['response']['result'] == { 'value': 42 }
 
     def test_invalid_arg(self):
         try:
@@ -64,4 +64,12 @@ class TestLiteral:
             assert False
         except composer.ComposerError as error:
             assert error.message == 'Invalid argument'
+
+@pytest.mark.function
+@pytest.mark.skip(reason='need python conductor')
+class TestFunction:
+
+    def test_function_true(self):
+         activation = invoke(composer.function(lambda args: args['n'] % 2 == 0), { 'n': 4 })
+         assert activation['response']['result'] == { 'value': True }
 

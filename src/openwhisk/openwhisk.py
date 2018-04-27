@@ -67,7 +67,7 @@ class Client:
             error = Exception()
             error.status_code = resp.status_code
             error.error = resp.text
-            raise  error
+            raise error
         else:
             # otherwise, the response body is the expected return value
             return resp.json()

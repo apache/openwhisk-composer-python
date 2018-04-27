@@ -14,5 +14,8 @@ def sequence(*arguments):
 def literal(value):
     return _composer.literal(value)
 
+def function(value):
+    return _composer.function(value)
+
 def openwhisk(options):
     return _composer.openwhisk(options)

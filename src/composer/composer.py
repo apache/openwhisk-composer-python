@@ -17,6 +17,7 @@ import os
 import sys
 import openwhisk
 import copy
+import inspect
 from composer import __version__
 
 # standard combinators
@@ -105,6 +106,22 @@ class Compiler:
             return self.action(task)
 
         raise ComposerError('Invalid argument', task)
+
+    def function(self, fun):
+        ''' function combinator: stringify lambda code '''
+        if callable(fun):
+            try:
+                fun = inspect.getsource(fun)
+            except OSError:
+                raise ComposerError('Invalid argument', fun)
+
+        if isinstance(fun, str):
+            fun = { 'kind': 'nodejs:default', 'code': fun }
+
+        if not isinstance(fun, dict) or fun is None:
+            raise ComposerError('Invalid argument', fun)
+
+        return Composition(type='function', function={ 'exec': fun })
 
     def _compose(self, type_, arguments):
         combinator = combinators[type_]
