@@ -56,7 +56,7 @@ class Client:
 
         serializer = options['serializer'] if 'serializer' in options else None
         payload = json.dumps(body, default=serializer)
-
+        print('\n\nPAYLOAD\n\n:', payload)
         headers = { 'Authorization': self.auth_header(), 'Content-Type': 'application/json' }
         verify = not self.options['ignore_certs']
 
@@ -66,7 +66,8 @@ class Client:
             # we turn >=400 statusCode responses into exceptions
             error = Exception()
             error.status_code = resp.status_code
-            error.error = resp.text
+            error.error = resp.reason
+            print('ERROR', resp.reason)
             raise error
         else:
             # otherwise, the response body is the expected return value
@@ -230,10 +231,10 @@ class Action(Resource):
         if 'action' not in options:
             raise Exception(missing_action_body_error)
 
-        body = { 'exec': { 'kind': options['kind'] if 'kind' in options else 'nodejs:default', 'code': options['action'] } }
+        body = { 'exec': { 'kind': options['kind'] if 'kind' in options else 'python:default', 'code': options['action'] } }
 
         if isinstance(options['action'], bytes):
-            body['exec']['code'] =base64.encodebytes(options['action'])
+            body['exec']['code'] = base64.encodebytes(options['action'])
         elif isinstance(options['action'], dict):
             return options['action']
 

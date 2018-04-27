@@ -77,11 +77,11 @@ class Composition:
                     setattr(self, arg['_'], f(getattr(self, arg['_']), arg['_']))
 
 class Compiler:
-    def literal(self, value):
-        return self._compose('literal', (value,))
-
     def empty(self):
         return self._compose('empty', ())
+
+    def literal(self, value):
+        return self._compose('literal', (value,))
 
     def seq(self, *arguments):
         return self._compose('seq', arguments)
@@ -100,7 +100,8 @@ class Compiler:
         if isinstance(task, Composition):
             return task
 
-        # if (typeof task === 'function') return this.function(task)
+        if callable(task):
+            return self.function(task)
 
         if isinstance(task, str): # python3 only
             return self.action(task)
@@ -214,15 +215,39 @@ class Compositions:
 
         if 'actions' in obj:
             for action in obj['actions']:
+                print('ACTION:', action)
                 action['serializer'] = serialize
                 self.actions.delete(action)
                 self.actions.update(action)
 
 class Composer(Compiler):
+    def action(self, name, options = {}):
+        ''' enhanced action combinator: mangle name, capture code '''
+        name = parse_action_name(name) # throws ComposerError if name is not valid
+        exec = None
+        if hasattr(options, 'sequence'): # native sequence
+            exec = { 'kind': 'sequence', 'components': tuple(map(parse_action_name, options['sequence'])) }
 
-    # return enhanced openwhisk client capable of deploying compositions
+        if hasattr(options, 'filename') and isinstance(options['filename'], str): # read action code from file
+            raise ComposerError('read from file not implemented')
+            # exec = fs.readFileSync(options.filename, { encoding: 'utf8' })
+
+        # if (typeof options.action === 'function') { // capture function
+        #     exec = `const main = ${options.action}`
+        #     if (exec.indexOf('[native code]') !== -1) throw new ComposerError('Cannot capture native function', options.action)
+        # }
+
+        if hasattr(options, 'action') and (isinstance(options['action'], str) or isinstance(options['action'],  dict)):
+            exec = options['action']
+
+        if isinstance(exec, str):
+            exec = { 'kind': 'nodejs:default', 'code': exec }
+
+        return Composition(type='action', exec=exec, name=name)
+
     def openwhisk(self, options):
-        ''' try to extract apihost and key first from whisk property file file and then from os.environ '''
+        ''' return enhanced openwhisk client capable of deploying compositions '''
+        # try to extract apihost and key first from whisk property file file and then from os.environ
 
         wskpropsPath = os.environ['WSK_CONFIG_FILE'] if 'WSK_CONFIG_FILE' in os.environ else os.path.expanduser('~/.wskprops')
         with open(wskpropsPath) as f:

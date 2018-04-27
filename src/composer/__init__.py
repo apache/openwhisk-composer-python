@@ -14,6 +14,9 @@ def sequence(*arguments):
 def literal(value):
     return _composer.literal(value)
 
+def task(value):
+    return _composer.task(value)
+
 def function(value):
     return _composer.function(value)
 
