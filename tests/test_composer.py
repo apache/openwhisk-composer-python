@@ -1,5 +1,22 @@
 import composer
 import pytest
+import os
+
+name = 'TestAction'
+
+wsk = composer.openwhisk({ 'ignore_certs': 'IGNORE_CERTS' in os.environ and os.environ['IGNORE_CERTS'] and os.environ['IGNORE_CERTS'] != '0' })
+
+def define(action):
+    ''' deploy action '''
+
+    wsk.actions.delete(action['name'])
+    wsk.actions.create(action)
+
+def invoke(task, params = {}, blocking = True):
+   ''' deploy and invoke composition '''
+   wsk.compositions.deploy(composer.composition(name, task))
+   return wsk.actions.invoke({ 'name': name, 'params': params, 'blocking': blocking })
+
 
 def test_parse_action_name():
     combos = [
@@ -30,20 +47,16 @@ def test_parse_action_name():
             except composer.ComposerError as error:
                 assert error.message == combo["e"]
 
-def test_main():
-    composition = composer.sequence("first", "second")
-    print(composition)
-
 @pytest.mark.literal
 class TestLiteral:
 
     def test_boolean(self):
-        composition = composer.literal(True)
-        print(composition)
+        activation = invoke(composer.literal(True))
+        assert activation['response']['result'] == { 'value': True }
 
     def test_number(self):
         composition = composer.literal(42)
-        print(composition)
+        # print(composition)
 
     def test_invalid_arg(self):
         try:
