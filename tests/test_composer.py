@@ -29,6 +29,16 @@ def deploy_actions():
     define({ 'name': 'isEven', 'action': 'function main({n}) { return { value: n % 2 == 0 } }', 'kind': 'nodejs:default'})
 
 class TestAction:
+    def test_action_true(self):
+        ''' action must return true '''
+        activation = invoke(composer.action('isNotOne'), { 'n': 0 })
+        assert activation['response']['result'] == { 'value': True }
+
+    def test_action_false(self):
+        ''' action must return false '''
+        activation = invoke(composer.action('isNotOne'), { 'n': 1 })
+        assert activation['response']['result'] == { 'value': False }
+
     def test_parse_action_name(self):
         combos = [
             { "n": "", "s": False, "e": "Name is not specified" },
@@ -57,6 +67,14 @@ class TestAction:
                     assert False
                 except composer.ComposerError as error:
                     assert error.message == combo["e"]
+
+    def test_invalid(self):
+        '''invalid argument'''
+        try:
+            invoke(composer.action(42))
+            assert False
+        except composer.ComposerError as error:
+            assert error.message == 'Name is not valid'
 
 @pytest.mark.literal
 class TestLiteral:

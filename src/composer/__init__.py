@@ -14,8 +14,11 @@ def sequence(*arguments):
 def literal(value):
     return _composer.literal(value)
 
-def task(value):
-    return _composer.task(value)
+def action(name, action=None):
+    return _composer.action(name, action)
+
+def task(task):
+    return _composer.task(task)
 
 def function(value):
     return _composer.function(value)

@@ -56,7 +56,6 @@ class Client:
 
         serializer = options['serializer'] if 'serializer' in options else None
         payload = json.dumps(body, default=serializer)
-        print('\n\nPAYLOAD\n\n:', payload)
         headers = { 'Authorization': self.auth_header(), 'Content-Type': 'application/json' }
         verify = not self.options['ignore_certs']
 
@@ -67,7 +66,6 @@ class Client:
             error = Exception()
             error.status_code = resp.status_code
             error.error = resp.reason
-            print('ERROR', resp.reason)
             raise error
         else:
             # otherwise, the response body is the expected return value

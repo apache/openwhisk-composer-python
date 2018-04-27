@@ -89,8 +89,8 @@ class Compiler:
     def sequence(self, *arguments):
         return self._compose('sequence', arguments)
 
-    def action(self, *arguments):
-        return self._compose('action', arguments)
+    def action(self, name, action=None):
+        return self._compose('action', (name, action))
 
     def task(self, task):
         '''detect task type and create corresponding composition object'''
@@ -127,9 +127,6 @@ class Compiler:
     def _compose(self, type_, arguments):
         combinator = combinators[type_]
         skip = len(combinator['args']) if 'args' in combinator else 0
-        if 'components' not in combinator and len(arguments) > skip:
-            raise ComposerError('Too many arguments')
-
         composition = Composition(type=type_)
 
         # process declared arguments
@@ -144,6 +141,9 @@ class Compiler:
                     raise ComposerError('Invalid argument', argument)
                 setattr(composition, arg['_'], argument)
             else:
+                if type(argument).__name__ != arg['type']:
+                    raise ComposerError('Invalid argument', argument)
+
                 setattr(composition, arg['_'], argument)
 
         if 'components' in combinator:
@@ -173,9 +173,11 @@ def parse_action_name(name):
         /ns/foo => /ns/foo
         /ns/pkg/foo => /ns/pkg/foo
     '''
+    if not isinstance(name, str):
+        raise ComposerError('Name is not valid')
     name = name.strip()
     if len(name) == 0:
-        raise ComposerError("Name is not specified")
+        raise ComposerError('Name is not specified')
 
     delimiter = '/'
     parts = name.split(delimiter)
@@ -183,18 +185,18 @@ def parse_action_name(name):
     leadingSlash = name[0] == delimiter if len(name) > 0 else False
     # no more than /ns/p/a
     if n < 1 or n > 4 or (leadingSlash and n == 2) or (not leadingSlash and n == 4):
-        raise ComposerError("Name is not valid")
+        raise ComposerError('Name is not valid')
 
     # skip leading slash, all parts must be non empty (could tighten this check to match EntityName regex)
     for part in parts[1:]:
         if len(part.strip()) == 0:
-            raise ComposerError("Name is not valid")
+            raise ComposerError('Name is not valid')
 
     newName = delimiter.join(parts)
     if leadingSlash:
         return newName
     elif n < 3:
-        return delimiter+"_"+delimiter+newName
+        return delimiter+'_'+delimiter+newName
     else:
         return delimiter+newName
 
@@ -215,8 +217,6 @@ class Compositions:
 
         if 'actions' in obj:
             for action in obj['actions']:
-                print('ACTION:', action)
-                action['serializer'] = serialize
                 self.actions.delete(action)
                 self.actions.update(action)
 
@@ -304,7 +304,7 @@ class Composer(Compiler):
                 composition.type = 'action'
 
             if composition.type == 'action' and hasattr(composition, 'action'):
-                actions.append({ 'name': composition.name, 'action': composition.action })
+                actions.append({ 'name': composition.name, 'action': composition.action, 'serializer': serialize })
                 del composition.action
 
             return composition
