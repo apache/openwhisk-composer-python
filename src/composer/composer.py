@@ -40,8 +40,8 @@ combinators = {
     'mask': {'components': True, 'since': '0.4.0'},
     'action': {'args': [{'_': 'name', 'type': 'string'}, {'_': 'action', 'type': 'object', 'optional': True}], 'since': '0.4.0'},
     'composition': {'args': [{'_': 'name', 'type': 'string'}, {'_': 'composition'}], 'since': '0.4.0'},
-    'repeat': {'args': [{'_': 'count', 'type': 'number'}], 'components': True, 'since': '0.4.0'},
-    'retry': {'args': [{'_': 'count', 'type': 'number'}], 'components': True, 'since': '0.4.0'},
+    'repeat': {'args': [{'_': 'count', 'type': 'int'}], 'components': True, 'since': '0.4.0'},
+    'retry': {'args': [{'_': 'count', 'type': 'int'}], 'components': True, 'since': '0.4.0'},
     'value': {'args': [{'_': 'value', 'type': 'value'}], 'since': '0.4.0'},
     'literal': {'args': [{'_': 'value', 'type': 'value'}], 'since': '0.4.0'},
     'function': {'args': [{'_': 'function', 'type': 'object'}], 'since': '0.4.0'}
@@ -77,6 +77,7 @@ class Composition:
                     setattr(self, arg['_'], f(getattr(self, arg['_']), arg['_']))
 
 class Compiler:
+
     def empty(self):
         return self._compose('empty', ())
 
@@ -94,6 +95,9 @@ class Compiler:
 
     def when(self, test, consequent, alternate=None):
         return self._compose('if', (test, consequent, alternate))
+
+    def ensure(self, body, finalizer):
+        return self._compose('finally', (body, finalizer))
 
     def task(self, task):
         '''detect task type and create corresponding composition object'''
@@ -150,7 +154,7 @@ class Compiler:
                 setattr(composition, arg['_'], argument)
 
         if 'components' in combinator:
-            setattr(composition, 'components', tuple(map(lambda obj: self.task(obj), arguments)))
+            setattr(composition, 'components', tuple(map(lambda obj: self.task(obj), arguments[skip:])))
 
         return composition
 

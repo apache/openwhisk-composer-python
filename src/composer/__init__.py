@@ -28,5 +28,38 @@ def function(value):
 def when(test, consequent, alternate=None):
     return _composer.when(test, consequent, alternate)
 
+def loop(test, body):
+    return _composer._compose('while', (test, body))
+
+def loop_nosave(test, body):
+    return _composer._compose('while_nosave', (test, body))
+
+def doloop(body, test):
+    return _composer._compose('dowhile', (body, test))
+
+def doloop_nosave(body, test):
+    return _composer._compose('dowhile_nosave', (body, test))
+
+def ensure(body, finalizer):
+    return _composer._compose('finally', (body, finalizer))
+
+def let(declarations, *arguments):
+    return _composer._compose('let', (declarations, *arguments))
+
+def mask(*arguments):
+    return _composer._compose('mask', arguments)
+
+def retain(*arguments):
+    return _composer._compose('retain', arguments)
+
+def retain_catch(*arguments):
+    return _composer._compose('retain_catch', arguments)
+
+def repeat(count, *arguments):
+    return _composer._compose('repeat', (count, *arguments))
+
+def retry(count, *arguments):
+    return _composer._compose('retry', (count, *arguments))
+
 def openwhisk(options):
     return _composer.openwhisk(options)
