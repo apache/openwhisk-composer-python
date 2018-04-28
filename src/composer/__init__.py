@@ -25,5 +25,8 @@ def task(task):
 def function(value):
     return _composer.function(value)
 
+def when(test, consequent, alternate=None):
+    return _composer.when(test, consequent, alternate)
+
 def openwhisk(options):
     return _composer.openwhisk(options)

@@ -141,3 +141,28 @@ class TestSequence:
     def test_seq(self):
         activation = invoke(composer.seq('TripleAndIncrement', 'DivideByTwo', 'DivideByTwo'), { 'n': 5 })
         assert activation['response']['result'] == { 'n': 4 }
+
+class TestIf:
+    def test_condition_true(self):
+        activation = invoke(composer.when('isEven', 'DivideByTwo', 'TripleAndIncrement'), { 'n': 4 })
+        assert activation['response']['result'] == { 'n': 2 }
+
+    def test_condition_false(self):
+        activation =  invoke(composer.when('isEven', 'DivideByTwo', 'TripleAndIncrement'), { 'n': 3 })
+        assert activation['response']['result'] == { 'n': 10 }
+
+    def test_condition_true_then_branch_only(self):
+        activation =  invoke(composer.when('isEven', 'DivideByTwo'), { 'n': 4 })
+        assert activation['response']['result'] == { 'n': 2 }
+
+    def test_condition_false_then_branch_only(self):
+        activation =  invoke(composer.when('isEven', 'DivideByTwo'), { 'n': 3 })
+        assert activation['response']['result'] == { 'n': 3 }
+
+    # def test_condition_true_nosave_option(self):
+    #     activation =  invoke(composer.if_nosave('isEven', params => { params.then = true }, params => { params.else = true }), { n: 2 })
+    #     assert activation['response']['result'] == { value: true, then: true }))
+
+    # def test_condition_false_nosave_option(self):
+    #     activation = invoke(composer.if_nosave('isEven', params => { params.then = true }, params => { params.else = true }), { n: 3 })
+    #     assert activation['response']['result'] == { value: false, else: true }))

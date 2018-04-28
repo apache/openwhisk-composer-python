@@ -92,6 +92,9 @@ class Compiler:
     def action(self, name, action=None):
         return self._compose('action', (name, action))
 
+    def when(self, test, consequent, alternate=None):
+        return self._compose('if', (test, consequent, alternate))
+
     def task(self, task):
         '''detect task type and create corresponding composition object'''
         if task is None:
