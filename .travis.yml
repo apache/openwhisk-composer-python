@@ -5,29 +5,30 @@ env:
   global:
     - LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
     - SEGFAULT_SIGNALS=all
+    - IGNORE_CERTS=true
+    - REDIS=redis://172.17.0.1:6379
   matrix:
     - TOXENV=check
-    - TOXENV=docs
 matrix:
   include:
-    - python: '2.7'
-      env:
-        - TOXENV=py27,report,coveralls
-    - python: '3.3'
-      env:
-        - TOXENV=py33,report,coveralls
-    - python: '3.4'
-      env:
-        - TOXENV=py34,report,coveralls
-    - python: '3.5'
-      env:
-        - TOXENV=py35,report,coveralls
+    # - python: '2.7'
+    #   env:
+    #     - TOXENV=py27,report,coveralls
+    # - python: '3.3'
+    #   env:
+    #     - TOXENV=py33,report,coveralls
+    # - python: '3.4'
+    #   env:
+    #     - TOXENV=py34,report,coveralls
+    # - python: '3.5'
+    #   env:
+    #     - TOXENV=py35,report,coveralls
     - python: '3.6'
       env:
         - TOXENV=py36,report,coveralls
-    - python: 'pypy-5.4'
-      env:
-        - TOXENV=pypy,report,coveralls
+    # - python: 'pypy-5.4'
+    #   env:
+    #     - TOXENV=pypy,report,coveralls
 before_install:
   - python --version
   - uname -a
@@ -38,6 +39,7 @@ install:
   - easy_install --version
   - pip --version
   - tox --version
+  - ./travis/setup.sh
 script:
   - tox -v
 after_failure:
