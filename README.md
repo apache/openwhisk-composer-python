@@ -1,6 +1,6 @@
-# @ibm-functions/composer
+# ibm-functions-composer
 
-[![Travis](https://travis-ci.org/ibm-functions/composer.svg?branch=master)](https://travis-ci.org/ibm-functions/composer)
+[![Build Status](https://travis.ibm.com/villard/composer-python.svg?token=bc6xtkRixk96zbXuAu7U&branch=master)](https://travis.ibm.com/villard/composer-python)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Join
 Slack](https://img.shields.io/badge/join-slack-9B69A0.svg)](http://slack.openwhisk.org/)
@@ -140,7 +140,7 @@ Compositions are implemented by means of OpenWhisk conductor actions. The
 actions](https://github.com/apache/incubator-openwhisk/blob/master/docs/conductors.md)
 explains execution traces in greater details.
 
-## Getting started 
+## Getting started
 * [Introduction to Serverless
   Composition](docs/tutorials/introduction/README.md): Setting up your
   programming environment and getting started with Shell and Composer.
