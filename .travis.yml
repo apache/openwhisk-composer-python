@@ -1,14 +1,16 @@
 language: python
 sudo: false
 cache: pip
+services:
+  - docker
 env:
   global:
     - LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
     - SEGFAULT_SIGNALS=all
     - IGNORE_CERTS=true
     - REDIS=redis://172.17.0.1:6379
-  matrix:
-    - TOXENV=check
+  # matrix:
+  #  - TOXENV=check
 matrix:
   include:
     # - python: '2.7'
