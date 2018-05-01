@@ -1,5 +1,4 @@
 language: python
-sudo: false
 cache: pip
 services:
   - docker
@@ -9,8 +8,8 @@ env:
     - SEGFAULT_SIGNALS=all
     - IGNORE_CERTS=true
     - REDIS=redis://172.17.0.1:6379
-  # matrix:
-  #  - TOXENV=check
+  matrix:
+    - TOXENV=check
 matrix:
   include:
     # - python: '2.7'
