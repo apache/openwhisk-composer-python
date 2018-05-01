@@ -5,6 +5,11 @@
 [![Join
 Slack](https://img.shields.io/badge/join-slack-9B69A0.svg)](http://slack.openwhisk.org/)
 
+DISCLAIMER: Work in progress. In particular the documentation hasn't been fully updated.
+
+This repository provides a Python library for [Composer](https://github.com/ibm-functions/composer/). For convenience, the Composer documentation is repeated below using Python bindings instead of JavaScript.
+
+
 Composer is a new programming model from [IBM
 Research](https://ibm.biz/serverless-research) for composing [IBM Cloud
 Functions](https://ibm.biz/openwhisk), built on [Apache
@@ -21,69 +26,56 @@ using Shell, Shell is not required to work with compositions. Compositions may
 be managed using a combination of the Composer [compose](docs/COMPOSE.md) command
 (for deployment) and the [OpenWhisk
 CLI](https://console.bluemix.net/openwhisk/learn/cli) (for configuration,
-invocation, and life-cycle management).
+invocation, and life-cycle management). **The shell does not support Python yet.**
 
-**In contrast to earlier releases of Composer, a Redis server is not required to
-run compositions**. Composer now synthesizes OpenWhisk [conductor
+Composer synthesizes OpenWhisk [conductor
 actions](https://github.com/apache/incubator-openwhisk/blob/master/docs/conductors.md)
 to implement compositions. Compositions have all the attributes and capabilities
 of an action (e.g., default parameters, limits, blocking invocation, web
 export).
 
 This repository includes:
-* the [composer](docs/COMPOSER.md) Node.js module for authoring compositions using
-  JavaScript,
-* the [compose](docs/COMPOSE.md) command for deploying compositions,
-* [documentation](docs), [examples](samples), and [tests](test).
+* the [composer](docs/COMPOSER.md) Python library for authoring compositions using Python,
+* the [compose](docs/COMPOSE.md) command for deploying compositions (**Not available  yet**),
+* [documentation](docs), [examples](samples), and [tests](tests).
 
 Composer and Shell are currently available as _IBM Research previews_. As
 Composer and Shell continue to evolve, it may be necessary to redeploy existing
 compositions to take advantage of new capabilities. However existing
 compositions should continue to run fine without redeployment.
 
-## Installation
+## Installation (**Not available yet**)
 
-Composer is distributed as Node.js package. To install this package, use the
-Node Package Manager:
+Composer is distributed on [PyPi](https://pypi.org/). To install this package, use `pip`:
 ```
-npm -g install @ibm-functions/composer
+pip install ibm-functions-composer
 ```
-We recommend to install the package globally (with `-g` option) if you intend to
-use the `compose` command to define and deploy compositions. Use a local install
-(without `-g` option) if you intend to use `node` instead. The two installations
-can coexist. Shell embeds the Composer package, so there is no need to install
-Composer explicitly when using Shell.
+Shell embeds the Composer package, so there is no need to install
+Composer for Python explicitly when using Shell.
 
 ## Defining a composition
 
-A composition is typically defined by means of a Javascript expression as
-illustrated in [samples/demo.js](samples/demo.js):
-```javascript
-composer.if(
-    composer.action('authenticate', { action: function ({ password }) { return { value: password === 'abc123' } } }),
-    composer.action('success', { action: function () { return { message: 'success' } } }),
-    composer.action('failure', { action: function () { return { message: 'failure' } } }))
+A composition is typically defined by means of a Python expression as
+illustrated in [samples/demo.py](samples/demo.py):
+```python
+composer.when(
+    composer.action('authenticate'),
+    composer.action('success'),
+    composer.action('failure'))
 ```
 Compositions compose actions using _combinator_ methods. These methods
 implement the typical control-flow constructs of a sequential imperative
 programming language. This example composition composes three actions named
-`authenticate`, `success`, and `failure` using the `composer.if` combinator,
+`authenticate`, `success`, and `failure` using the `composer.when` combinator,
 which implements the usual conditional construct. It take three actions (or
 compositions) as parameters. It invokes the first one and, depending on the
 result of this invocation, invokes either the second or third action.
 
- This composition includes the definitions of the three composed actions. If the
- actions are defined and deployed elsewhere, the composition code can be shorten
- to:
-```javascript
-composer.if('authenticate', 'success', 'failure')
-```
-
-## Deploying a composition
+## Deploying a composition (**Not available yet**)
 
 One way to deploy a composition is to use the [compose](docs/COMPOSE.md) command:
 ```
-compose demo.js --deploy demo
+compose demo.py --deploy demo
 ```
 ```
 ok: created actions /_/authenticate,/_/success,/_/failure,/_/demo
