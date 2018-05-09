@@ -260,22 +260,24 @@ class Composer(Compiler):
         with open(wskpropsPath) as f:
             lines = f.readlines()
 
+        options = dict(options)
+
         for line in lines:
             parts = line.strip().split('=')
             if len(parts) == 2:
                 if parts[0] == 'APIHOST':
-                    apihost = parts[1]
+                    options['apihost'] = parts[1]
                 elif parts[0] == 'AUTH':
-                    api_key = parts[1]
+                    options['api_key'] = parts[1]
 
 
         if '__OW_API_HOST' in os.environ:
-            apihost = os.environ['__OW_API_HOST']
+            options['apihost'] = os.environ['__OW_API_HOST']
 
         if '__OW_API_KEY' in os.environ:
-             api_key = os.environ['__OW_API_KEY']
+             options['api_key'] = os.environ['__OW_API_KEY']
 
-        wsk = openwhisk.Client({ 'apihost': apihost, 'api_key': api_key })
+        wsk = openwhisk.Client(options)
         wsk.compositions = Compositions(wsk, self)
         return wsk
 
