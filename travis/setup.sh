@@ -5,9 +5,7 @@ OLD_VIRTUAL_ENV=VIRTUAL_ENV
 deactivate
 
 # Build script for Travis-CI.
-
-SCRIPTDIR=$(cd $(dirname "$0") && pwd)
-ROOTDIR="$SCRIPTDIR/.."
+ROOTDIR=$TRAVIS_BUILD_DIR
 IMAGE_PREFIX="composer"
 WHISKDIR="$ROOTDIR/openwhisk"
 
