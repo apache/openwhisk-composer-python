@@ -66,6 +66,7 @@ class Client:
             error = Exception()
             error.status_code = resp.status_code
             error.error = resp.reason
+            print(resp.reason)
             raise error
         else:
             # otherwise, the response body is the expected return value

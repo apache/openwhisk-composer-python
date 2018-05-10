@@ -4,7 +4,7 @@ import os
 
 name = 'TestAction'
 
-wsk = composer.openwhisk({ 'ignore_certs': 'IGNORE_CERTS' in os.environ and os.environ['IGNORE_CERTS'] and os.environ['IGNORE_CERTS'] != '0' })
+wsk = composer.openwhisk({ 'ignore_certs': 'IGNORE_CERTS' in os.environ and os.environ['IGNORE_CERTS'] == 'true' })
 
 def define(action):
     ''' deploy action '''
