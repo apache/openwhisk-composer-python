@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-OLD_VIRTUAL_ENV=VIRTUAL_ENV
+OLD_VIRTUAL_ENV=$VIRTUAL_ENV
 deactivate
 
 # Build script for Travis-CI.
