@@ -158,8 +158,6 @@ class Compiler:
 
         return composition
 
-
-
     def deserialize(self, composition):
         ''' recursively deserialize composition '''
 
@@ -185,10 +183,10 @@ class Compiler:
                     else:
                         segment = '.'+name
 
-                composition['path'] = path + segment
+                setattr(composition, 'path', path + segment)
 
                 # label nested combinators
-                composition.visit(label(composition['path']))
+                composition.visit(label(getattr(composition, 'path')))
                 return composition
 
             return labeler

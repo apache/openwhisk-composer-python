@@ -31,52 +31,52 @@ def conductor(args):
 
     def compile(json):
         path = json.path
-        type_ = json['type']
+        type_ = json.type
         if type_ == 'sequence':
-            return chain([{ 'type': 'pass', 'path':path }], sequence(json['components']))
+            return chain([{ 'type': 'pass', 'path':path }], sequence(json.components))
         elif type_ == 'action':
-            return [{ 'type': 'action', 'name': json['name'], 'path': path }]
+            return [{ 'type': 'action', 'name': json.name, 'path': path }]
         elif type_ == 'function':
-            return [{ 'type': 'function', 'exec': json['function']['exec'], 'path':path }]
+            return [{ 'type': 'function', 'exec': json.function['exec'], 'path':path }]
         elif type_ == 'finally':
-            body = compile(json['body'])
-            finalizer = compile(json['finalizer'])
+            body = compile(json.body)
+            finalizer = compile(json.finalizer)
             fsm = functools.reduce(chain, [[{'type': 'try', 'path': path}], body, [{ 'type': 'exit' }], finalizer])
             fsm[0]['catch'] = len(fsm) - len(finalizer)
             return fsm
         elif type_ == 'let':
-            body = sequence(json['components'])
-            return functools.reduce(chain, [[{ 'type': 'let', 'let': json['declarations'], 'path':path }], body, [{ 'type': 'exit' }]])
+            body = sequence(json.components)
+            return functools.reduce(chain, [[{ 'type': 'let', 'let': json.declarations, 'path':path }], body, [{ 'type': 'exit' }]])
         elif type_ == 'mask':
-            body = sequence(json['components'])
+            body = sequence(json.components)
             return functools.reduce(chain, [[{ 'type': 'let', 'let': None, 'path': path }], body, [{ 'type': 'exit' }]])
         elif type_ == 'try':
-            body = compile(json['body'])
-            handler = chain(compile(json['handler']), [{ 'type': 'pass' }])
+            body = compile(json.body)
+            handler = chain(compile(json.handler), [{ 'type': 'pass' }])
             fsm = functools.reduce(chain, [[{ 'type': 'try', 'path':path }], body, [{ 'type': 'exit' }]])
             fsm[0]['catch'] = len(fsm)
             fsm[-1].next = len(handler)
             fsm.extend(handler)
             return fsm
         elif type_ == 'if_nosave':
-            consequent = compile(json['consequent'])
-            alternate = chain(compile(json['alternate']), [{ 'type': 'pass' }])
-            fsm = functools.reduce(chain, [[{ 'type': 'pass', 'path':path }], compile(json['test']), [{ 'type': 'choice', 'then': 1, 'else': len(consequent) + 1 }]])
+            consequent = compile(json.consequent)
+            alternate = chain(compile(json.alternate), [{ 'type': 'pass' }])
+            fsm = functools.reduce(chain, [[{ 'type': 'pass', 'path':path }], compile(json.test), [{ 'type': 'choice', 'then': 1, 'else': len(consequent) + 1 }]])
             consequent[-1].next = len(alternate)
             fsm.extend(consequent)
             fsm.extend(alternate)
             return fsm
         elif type_ == 'while_nosave':
-            consequent = compile(json['body'])
+            consequent = compile(json.body)
             alternate = [{ 'type': 'pass' }]
-            fsm = functools.reduce(chain, [[{ 'type': 'pass', 'path':path }], compile(json['test']), [{ 'type': 'choice', 'then': 1, 'else': len(consequent) + 1 }]])
+            fsm = functools.reduce(chain, [[{ 'type': 'pass', 'path':path }], compile(json.test), [{ 'type': 'choice', 'then': 1, 'else': len(consequent) + 1 }]])
             consequent[-1].next = 1 - len(fsm) - len(consequent)
             fsm.extend(consequent)
             fsm.extend(alternate)
             return fsm
         elif type_ == 'dowhile_nosave':
-            test = compile(json['test'])
-            fsm = functools.reduce(chain, [[{ 'type': 'pass', 'path':path }], compile(json['body']), test, [{ 'type': 'choice', 'then': 1, 'else': 2 }]])
+            test = compile(json.test)
+            fsm = functools.reduce(chain, [[{ 'type': 'pass', 'path':path }], compile(json.body), test, [{ 'type': 'choice', 'then': 1, 'else': 2 }]])
             fsm[-1]['then'] = 1 - len(fsm)
             fsm[-1]['else'] = 1
             alternate = [{ 'type': 'pass' }]
@@ -120,11 +120,11 @@ def conductor(args):
             if not isinstance(stack, list):
                 return badRequest('The type of $resume["stack"] must be an array')
             del params['$resume']
-            inspect() # handle error objects when resuming
+            inspect_errors() # handle error objects when resuming
 
 
         # wrap params if not a dictionary, branch to error handler if error
-        def inspect():
+        def inspect_errors():
             nonlocal params
             nonlocal state
             nonlocal stack
@@ -184,8 +184,6 @@ def conductor(args):
                 for  name in env:
                     set(name, env[name])
 
-
-
         while True:
             # final state, return composition result
             if state is None:
@@ -197,7 +195,7 @@ def conductor(args):
                     return { 'params': params }
 
             # process one state
-            jsonv = fsm['state'] # jsonv definition for current state
+            jsonv = fsm[state] # jsonv definition for current state
             if hasattr(jsonv, 'path'):
                 print('Entering composition'+jsonv['path'])
             current = state
@@ -227,9 +225,9 @@ def conductor(args):
                 # if a function has only side effects and no return value (or return None), return params
 
                 params = params if result is None else result
-                inspect()
+                inspect_errors()
             elif jsonv['type'] == 'empty':
-                inspect()
+                inspect_errors()
             elif jsonv['type'] == 'pass':
                 pass
             else:
