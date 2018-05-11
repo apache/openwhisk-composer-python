@@ -90,7 +90,7 @@ def conductor(args):
     def encodeError(error):
         return {
             'code': error['code'] if isinstance(error['code'], int) else 500,
-            'error': error['error'] if isinstance(error['error'], str) else (error['message'] if hasattr(error, 'message') else (error if isinstance(error, str) else 'An internal error occurred'))
+            'error': error['error'] if isinstance(error['error'], str) else (error['message'] if 'message' in error else (error if isinstance(error, str) else 'An internal error occurred'))
         }
 
     # error status codes
@@ -109,11 +109,26 @@ def conductor(args):
         state = 0
         stack = []
 
+        # wrap params if not a dictionary, branch to error handler if error
+        def inspect_errors():
+            nonlocal params
+            nonlocal state
+            nonlocal stack
+            params = params if isObject(params) else { 'value': params }
+            if 'error' in params:
+                params = { 'error': params['error'] } # discard all fields but the error field
+                state = None # abort unless there is a handler in the stack
+                while len(stack) > 0:
+                    first = stack[0]
+                    stack = stack[1:]
+                    if isinstance(first['catch'], int):
+                        break
+
         # restore state and stack when resuming
-        if hasattr(params, '$resume'):
+        if '$resume' in params:
             if not isObject(params['$resume']):
                 return badRequest('The type of optional $resume parameter must be object')
-            if not hasattr(params['$resume'], 'state') and not isinstance(params['$resume']['state'], int):
+            if not 'state' in params['$resume'] and not isinstance(params['$resume']['state'], int):
                 return badRequest('The type of optional $resume["state"] parameter must be number')
             state = params['$resume']['state']
             stack = params['$resume']['stack']
@@ -123,20 +138,7 @@ def conductor(args):
             inspect_errors() # handle error objects when resuming
 
 
-        # wrap params if not a dictionary, branch to error handler if error
-        def inspect_errors():
-            nonlocal params
-            nonlocal state
-            nonlocal stack
-            params = params if isObject(params) else { 'value': params }
-            if hasattr(params, 'error'):
-                params = { 'error': params['error'] } # discard all fields but the error field
-                state = None # abort unless there is a handler in the stack
-                while len(stack) > 0:
-                    first = stack[0]
-                    stack = stack[1:]
-                    if isinstance(first['catch'], int):
-                        break
+
 
         # run function f on current stack
         def run(f):
@@ -146,7 +148,7 @@ def conductor(args):
             for frame in stack:
                 if frame['let'] is None:
                     n  += 1
-                elif hasattr(frame, 'let'):
+                elif 'let' in frame:
                     if n == 0:
                         view.append(frame)
                     else:
@@ -155,7 +157,7 @@ def conductor(args):
 
             # update value of topmost matching symbol on stack if any
             def set(symbol, value):
-                lets = [element for element in view if hasattr(element, 'let') and hasattr(element['let'], 'symbol')]
+                lets = [element for element in view if 'let' in element and 'symbol' in element['let']]
                 if len(lets) > 0:
                     element = next(lets)
                     element['let']['symbol'] = value # TODO: JSON.parse(JSON.stringify(value))
@@ -189,17 +191,17 @@ def conductor(args):
             if state is None:
                 print('Entering final state')
                 print(json.dumps(params))
-                if hasattr(params, 'error'):
+                if 'error' in params:
                     return params
                 else:
                     return { 'params': params }
 
             # process one state
             jsonv = fsm[state] # jsonv definition for current state
-            if hasattr(jsonv, 'path'):
+            if 'path' in jsonv:
                 print('Entering composition'+jsonv['path'])
             current = state
-            state = current + jsonv['next'] if hasattr(jsonv, 'next') else None # default next state
+            state = current + jsonv['next'] if 'next' in jsonv else None # default next state
             if jsonv['type'] == 'choice':
                 state = current + (jsonv['then'] if params['value'] else jsonv['else'])
             elif jsonv['type'] == 'try':
