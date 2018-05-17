@@ -28,6 +28,51 @@ def deploy_actions():
     define({ 'name': 'isNotOne', 'action': 'function main({n}) { return { value: n != 1 } }', 'kind': 'nodejs:default' })
     define({ 'name': 'isEven', 'action': 'function main({n}) { return { value: n % 2 == 0 } }', 'kind': 'nodejs:default'})
 
+def isEven(env, args):
+    return args['n'] % 2 == 0
+
+def set_then_true(env, args):
+    args['then'] = True
+
+def set_else_true(env, args):
+    args['else'] = True
+
+def dec_n(env, args):
+    return {'n': args['n'] - 1 }
+
+def cond_false(env, args):
+    return False
+
+def cond_nosave(env, args):
+    return { 'n': args['n'], 'value': args['n'] != 1 }
+
+def cond_true(env, args):
+    return True
+
+def return_error_message(env, args):
+    return {'message': args['error']}
+
+def set_error(env, args):
+    return { 'error': 'foo' }
+
+def set_p_4(env, args):
+    return { 'p': 4 }
+
+def nest_params(env, args):
+    return { 'params': args }
+
+def get_x(env, args):
+    return env['x']
+
+def get_x_plus_y(env, args):
+    return env['x'] + env['y']
+
+def get_value_plus_x(env, args):
+    return args['value'] + env['x']
+
+def noop(env, args):
+    pass
+
 class TestAction:
     def test_action_true(self):
         ''' action must return true '''
@@ -93,9 +138,6 @@ class TestLiteral:
         except composer.ComposerError as error:
             assert error.message == 'Invalid argument'
 
-def isEven(env, args):
-    return args['n'] % 2 == 0
-
 class TestFunction:
 
     def test_function_true(self):
@@ -142,12 +184,6 @@ class TestSequence:
         activation = invoke(composer.seq('TripleAndIncrement', 'DivideByTwo', 'DivideByTwo'), { 'n': 5 })
         assert activation['response']['result'] == { 'n': 4 }
 
-def set_then_true(env, args):
-    args['then'] = True
-
-def set_else_true(env, args):
-    args['else'] = True
-
 class TestIf:
     def test_condition_true(self):
         activation = invoke(composer.when('isEven', 'DivideByTwo', 'TripleAndIncrement'), { 'n': 4 })
@@ -173,15 +209,6 @@ class TestIf:
         activation = invoke(composer.when_nosave('isEven', set_then_true, set_else_true), { 'n': 3 })
         assert activation['response']['result'] == { 'value': False, 'else': True }
 
-def dec_n(env, args):
-    return {'n': args['n'] - 1 }
-
-def cond_false(env, args):
-    return False
-
-def cond_nosave(env, args):
-    return { 'n': args['n'], 'value': args['n'] != 1 }
-
 class TestLoop:
 
     def test_a_few_iterations(self) :
@@ -196,117 +223,112 @@ class TestLoop:
         activation = invoke(composer.loop_nosave(cond_nosave, dec_n), { 'n': 4 })
         assert activation['response']['result'] == { 'value': False, 'n': 1 }
 
-@pytest.mark.skip(reason='need python conductor')
 class TestDoLoop:
 
     def test_a_few_iterations(self) :
-        activation = invoke(composer.doloop('({ n }) => ({ n: n - 1 })', 'isNotOne'), { 'n': 4 })
+        activation = invoke(composer.doloop(dec_n, 'isNotOne'), { 'n': 4 })
         assert activation['response']['result'] == { 'n': 1 }
 
     def test_one_iteration(self) :
-        activation = invoke(composer.doloop('({ n }) => ({ n: n - 1 })', '() => false'), { 'n': 1 })
+        activation = invoke(composer.doloop(dec_n, cond_false), { 'n': 1 })
         assert activation['response']['result'] == { 'n': 0 }
 
     def test_nosave_option(self) :
-        activation = invoke(composer.doloop_nosave(('{ n }) => ({ n: n - 1 })', '({ n }) => ({ n, value: n !== 1 }))'), { 'n': 4 }))
+        activation = invoke(composer.doloop_nosave(dec_n, cond_nosave), { 'n': 4 })
         assert activation['response']['result'] == { 'value': False, 'n': 1 }
 
-@pytest.mark.skip(reason='need python conductor')
 class TestDo: # Try
     def test_no_error(self):
-        activation = invoke(composer.do('() => true', 'error => ({ message: error.error })'), None)
+        activation = invoke(composer.do(cond_true, return_error_message), {})
         assert activation['response']['result'] == { 'value': True }
 
     def test_error(self) :
-        activation = invoke(composer.do('() => ({ error: "foo" })', 'error => ({ message: error.error })'))
+        activation = invoke(composer.do(set_error, return_error_message), {})
         assert activation['response']['result'] == { 'message': 'foo' }
 
     def test_try_must_throw(self) :
-        activation = invoke(composer.do(composer.task(None), 'error => ({ message: error.error }))', { 'error': 'foo' }))
+        activation = invoke(composer.do(composer.task(None), return_error_message), { 'error': 'foo' })
         assert activation['response']['result'] == { 'message': 'foo' }
 
     def test_while_must_throw(self) :
-        activation = invoke(composer.do(composer.loop(composer.literal(False), None), 'error => ({ message: error.error })'), { 'error': 'foo' })
+        activation = invoke(composer.do(composer.loop(composer.literal(False), None), return_error_message), { 'error': 'foo' })
         assert activation['response']['result'] == { 'message': 'foo' }
 
     def test_if_must_throw(self) :
-        activation = invoke(composer.do(composer.when(composer.literal(False), None), 'error => ({ message: error.error })'), { 'error': 'foo' })
+        activation = invoke(composer.do(composer.when(composer.literal(False), None), return_error_message), { 'error': 'foo' })
         assert activation['response']['result'] == { 'message': 'foo' }
 
     def test_retain(self) :
-        activation = invoke(composer.retain(composer.do('() => ({ p: 4 })', None)), { 'n': 3 })
+        activation = invoke(composer.retain(composer.do(set_p_4, None)), { 'n': 3 })
         assert activation['response']['result'] == { 'params': { 'n': 3 }, 'result': { 'p': 4 } }
 
-@pytest.mark.skip(reason='need python conductor')
 class TestEnsure: # Finally
 
     def test_no_error(self) :
-        activation = invoke(composer.ensure('() => true', 'params => ({ params })'))
+        activation = invoke(composer.ensure(cond_true, nest_params), {})
         assert activation['response']['result'] == { 'params': { 'value': True } }
 
     def test_error(self) :
-        activation = invoke(composer.ensure('() => ({ error: "foo" })', 'params => ({ params })'))
+        activation = invoke(composer.ensure(set_error, nest_params), {})
         assert activation['response']['result'] == { 'params': { 'error': 'foo' } }
 
-@pytest.mark.skip(reason='need python conductor')
 class TestLet:
 
     def test_one_variable(self) :
-        activation = invoke(composer.let({ 'x': 42 }, '() => x'))
+        activation = invoke(composer.let({ 'x': 42 }, get_x), {})
         assert activation['response']['result'] == { 'value': 42 }
 
     def test_masking(self) :
-        activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 }, '() => x')))
-        assert activation['response']['result'] == { value: 69 }
+        activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 }, get_x)), {})
+        assert activation['response']['result'] == { 'value': 69 }
 
     def test_two_variables(self) :
-        activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'y': 69 }, '() => x + y')))
+        activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'y': 69 }, get_x_plus_y)), {})
         assert activation['response']['result'] == { 'value': 111 }
 
     def test_two_variables_combined(self) :
-        activation = invoke(composer.let({ 'x': 42, 'y': 69 }, '() => x + y'))
+        activation = invoke(composer.let({ 'x': 42, 'y': 69 }, get_x_plus_y), {})
         assert activation['response']['result'] == { 'value': 111 }
 
     def test_scoping(self) :
-        activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 }, '() => x'), '({ value }) => value + x'))
+        activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 }, get_x), get_value_plus_x), {})
         assert activation['response']['result'] == { 'value': 111 }
 
     def test_invalid_argument(self):
         try:
             invoke(composer.let(invoke))
             assert False
-        except Exception as error:
+        except composer.ComposerError as error:
             assert error.message.startswith('Invalid argument')
 
-@pytest.mark.skip(reason='need python conductor')
 class TestMask:
 
     def test_let_let_mask(self) :
-        activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 }, composer.mask('() => x'))))
+        activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 }, composer.mask(get_x))), {})
         assert activation['response']['result'] == { 'value': 42 }
 
     def test_let_mask_let(self) :
-        activation = invoke(composer.let({ 'x': 42 }, composer.mask(composer.let({ 'x': 69 }, '() => x'))))
+        activation = invoke(composer.let({ 'x': 42 }, composer.mask(composer.let({ 'x': 69 }, get_x))), {})
         assert activation['response']['result'] == { 'value': 69 }
 
     def test_let_let_try_mask(self) :
         activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 },
-            composer.do(composer.mask('() => x'), '() => { }'))))
+            composer.do(composer.mask(get_x), noop))))
         assert activation['response']['result'] == { 'value': 42 }
 
     def test_let_let_let_mask(self) :
         activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 },
-            composer.let({ 'x': -1 }, composer.mask('() => x')))))
+            composer.let({ 'x': -1 }, composer.mask(get_x)))))
         assert activation['response']['result'] == { 'value': 69 }
 
     def test_let_let_let_mask_mask(self) :
         activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 },
-            composer.let({ 'x': -1 }, composer.mask(composer.mask('() => x'))))))
+            composer.let({ 'x': -1 }, composer.mask(composer.mask(get_x))))), {})
         assert activation['response']['result'] == { 'value': 42 }
 
     def test_let_let_mask_let_mask(self) :
         activation = invoke(composer.let({ 'x': 42 }, composer.let({ 'x': 69 },
-            composer.mask(composer.let({ 'x': -1 }, composer.mask('() => x'))))))
+            composer.mask(composer.let({ 'x': -1 }, composer.mask(get_x))))))
         assert activation['response']['result'] == { 'value': 42 }
 
 class TestRetain:
@@ -315,20 +337,16 @@ class TestRetain:
         activation = invoke(composer.retain('TripleAndIncrement'), { 'n': 3 })
         assert activation['response']['result'] == { 'params': { 'n': 3 }, 'result': { 'n': 10 } }
 
-    @pytest.mark.skip(reason='need python conductor')
     def test_throw_error(self) :
         try:
-            activation = invoke(composer.retain('() => ({ error: "foo" })'), { 'n': 3 })
+            invoke(composer.retain(set_error), { 'n': 3 })
             assert False
-        except composer.ComposerError as error:
-            assert error.error.response.result == { 'error': 'foo' }
+        except Exception as err:
+            assert err.error['response']['result'] == { 'error': 'foo' }
 
-    @pytest.mark.skip(reason='need python conductor')
     def test_catch_error(self) :
-        try:
-            activation = invoke(composer.retain_catch('() => ({ error: "foo" })'), { 'n': 3 })
-        except Exception as activation:
-            assert activation['response']['result'] == { 'params': { 'n': 3 }, 'result': { 'error': 'foo' } }
+        activation = invoke(composer.retain_catch(set_error), { 'n': 3 })
+        assert activation['response']['result'] == { 'params': { 'n': 3 }, 'result': { 'error': 'foo' } }
 
 class TestRepeat:
 
@@ -343,24 +361,27 @@ class TestRepeat:
         except composer.ComposerError as error:
             assert error.message.startswith('Invalid argument')
 
+def retry_test(env, args):
+    x = env['x']
+    env['x'] -= 1
+    return { 'error': 'foo' } if x > 0 else 42
+
 class TestRetry:
 
-    @pytest.mark.skip(reason='need python conductor')
     def test_success(self) :
-        activation = invoke(composer.let({ 'x': 2 }, composer.retry(2, '() => x-- > 0 ? { error: "foo" } : 42')))
+        activation = invoke(composer.let({ 'x': 2 }, composer.retry(2, retry_test)))
         assert activation['response']['result'] == { 'value': 42 }
 
-    @pytest.mark.skip(reason='need python conductor')
     def test_failure(self) :
         try:
-            activation = invoke(composer.let({ 'x': 2 }, composer.retry(1, '() => x-- > 0 ? { error: "foo" } : 42')))
+            invoke(composer.let({ 'x': 2 }, composer.retry(1, retry_test)))
             assert False
-        except Exception as activation:
-            assert activation.error.response.result.error, 'foo'
+        except composer.ComposerError as err:
+            assert err.error.response.result.error, 'foo'
 
     def test_invalid_argument(self) :
         try:
             invoke(composer.retry('foo'))
             assert False
-        except Exception as error:
+        except composer.ComposerError as error:
             assert error.message.startswith('Invalid argument')

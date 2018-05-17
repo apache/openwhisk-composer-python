@@ -109,8 +109,8 @@ def conductor():
     def guarded_invoke(params):
         try:
             return invoke(params)
-        except Exception as error:
-            return internalError(error)
+        except Exception as err:
+            return internalError(err)
 
     def invoke(params):
         ''' do invocation '''
@@ -130,8 +130,11 @@ def conductor():
                 while len(stack) > 0:
                     first = stack[0]
                     stack = stack[1:]
-                    if 'catch' in first and isinstance(first['catch'], int):
-                        break
+                    if 'catch' in first:
+                        state = first['catch']
+                        if isinstance(state, int):
+                            break
+
 
         # restore state and stack when resuming
         if '$resume' in params:
@@ -152,7 +155,7 @@ def conductor():
             view = []
             n = 0
             for frame in stack:
-                if frame['let'] is None:
+                if 'let' in frame and frame['let'] is None:
                     n += 1
                 elif 'let' in frame:
                     if n == 0:
@@ -164,7 +167,6 @@ def conductor():
             # update value of topmost matching symbol on stack if any
             def set(symbol, value):
                 lets = [element for element in view if 'let' in element and symbol in element['let']]
-                print(lets)
                 if len(lets) > 0:
                     element = lets[0]
                     element['let'][symbol] = value # TODO: JSON.parse(JSON.stringify(value))
@@ -230,8 +232,8 @@ def conductor():
 
                 if callable(result):
                     result = { 'error': 'State '+str(current)+' evaluated to a function' }
-                # if a function has only side effects and no return value (or return None), return params
 
+                # if a function has only side effects and no return value (or return None), return params
                 params = params if result is None else result
                 inspect_errors()
             elif jsonv['type'] == 'empty':

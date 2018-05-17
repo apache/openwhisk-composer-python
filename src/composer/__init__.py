@@ -38,7 +38,7 @@ def loop_nosave(test, body):
     return _composer.loop_nosave(test, body)
 
 def do(body, handler):
-    return _composer._compose('do', (body, handler))
+    return _composer._compose('try', (body, handler))
 
 def doloop(body, test):
     return _composer.doloop(body, test)

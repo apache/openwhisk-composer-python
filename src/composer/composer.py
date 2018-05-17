@@ -193,6 +193,7 @@ class Compiler:
             except OSError:
                 raise ComposerError('Invalid argument', fun)
 
+        print(fun)
         if isinstance(fun, str):
             # standardize function name
             fun = re.sub(r'def\s+([a-zA-Z_][a-zA-Z_0-9]*)\s*\(', 'def func(', fun)
@@ -539,6 +540,8 @@ class Composer(Compiler):
                 code += '\n' + inspect.getsource(Compiler)
                 code += 'def main(args):'
                 code += '\n    return conductor()(args)'
+
+                print(code)
 
                 composition.action = { 'exec': { 'kind': 'python:3', 'code':code }, 'annotations': [{ 'key': 'conductor', 'value': str(composition.composition) }, { 'key': 'composer', 'value': __version__ }] }
 

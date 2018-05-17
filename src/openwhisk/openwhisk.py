@@ -65,8 +65,7 @@ class Client:
             # we turn >=400 statusCode responses into exceptions
             error = Exception()
             error.status_code = resp.status_code
-            error.error = resp.reason
-            print(resp.reason)
+            error.error = resp.json()
             raise error
         else:
             # otherwise, the response body is the expected return value
