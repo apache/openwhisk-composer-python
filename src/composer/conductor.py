@@ -11,13 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-composition = {} # will be overridden
-
 import functools
 import json
 
-def conductor(args):
-    compiler = args['compiler']()
+# dummy composition and compiler
+composition = {} # will be overridden
+class Compiler:
+    def lower(self, composition, combinators = []):
+        pass
+    def deserialize(self, composition):
+        pass
+    def label(self, composition):
+        pass
+
+def conductor():
+    global composition
+    compiler = Compiler()
 
     def chain(front, back):
         front[-1]['next'] = 1
@@ -30,7 +39,7 @@ def conductor(args):
         return functools.reduce(chain, map(compile, components))
 
     def compile(json):
-        path = json.path
+        path = json.path if hasattr(json, 'path') else None
         type_ = json.type
         if type_ == 'sequence':
             return chain([{ 'type': 'pass', 'path':path }], sequence(json.components))
@@ -55,14 +64,14 @@ def conductor(args):
             handler = chain(compile(json.handler), [{ 'type': 'pass' }])
             fsm = functools.reduce(chain, [[{ 'type': 'try', 'path':path }], body, [{ 'type': 'exit' }]])
             fsm[0]['catch'] = len(fsm)
-            fsm[-1].next = len(handler)
+            fsm[-1]['next'] = len(handler)
             fsm.extend(handler)
             return fsm
         elif type_ == 'if_nosave':
             consequent = compile(json.consequent)
             alternate = chain(compile(json.alternate), [{ 'type': 'pass' }])
             fsm = functools.reduce(chain, [[{ 'type': 'pass', 'path':path }], compile(json.test), [{ 'type': 'choice', 'then': 1, 'else': len(consequent) + 1 }]])
-            consequent[-1].next = len(alternate)
+            consequent[-1]['next'] = len(alternate)
             fsm.extend(consequent)
             fsm.extend(alternate)
             return fsm
@@ -70,7 +79,7 @@ def conductor(args):
             consequent = compile(json.body)
             alternate = [{ 'type': 'pass' }]
             fsm = functools.reduce(chain, [[{ 'type': 'pass', 'path':path }], compile(json.test), [{ 'type': 'choice', 'then': 1, 'else': len(consequent) + 1 }]])
-            consequent[-1].next = 1 - len(fsm) - len(consequent)
+            consequent[-1]['next'] = 1 - len(fsm) - len(consequent)
             fsm.extend(consequent)
             fsm.extend(alternate)
             return fsm
@@ -121,7 +130,7 @@ def conductor(args):
                 while len(stack) > 0:
                     first = stack[0]
                     stack = stack[1:]
-                    if isinstance(first['catch'], int):
+                    if 'catch' in first and isinstance(first['catch'], int):
                         break
 
         # restore state and stack when resuming
@@ -137,9 +146,6 @@ def conductor(args):
             del params['$resume']
             inspect_errors() # handle error objects when resuming
 
-
-
-
         # run function f on current stack
         def run(f):
             # handle let/mask pairs
@@ -147,43 +153,43 @@ def conductor(args):
             n = 0
             for frame in stack:
                 if frame['let'] is None:
-                    n  += 1
+                    n += 1
                 elif 'let' in frame:
                     if n == 0:
                         view.append(frame)
                     else:
-                        n =- 1
+                        n -= 1
 
 
             # update value of topmost matching symbol on stack if any
             def set(symbol, value):
-                lets = [element for element in view if 'let' in element and 'symbol' in element['let']]
+                lets = [element for element in view if 'let' in element and symbol in element['let']]
+                print(lets)
                 if len(lets) > 0:
-                    element = next(lets)
-                    element['let']['symbol'] = value # TODO: JSON.parse(JSON.stringify(value))
+                    element = lets[0]
+                    element['let'][symbol] = value # TODO: JSON.parse(JSON.stringify(value))
 
 
             def reduceRight(func, init, seq):
                 if not seq:
                     return init
                 else:
-                    return func(seq[0], reduceRight(func, init, seq[1:]))
+                    return func(reduceRight(func, init, seq[1:]), seq[0])
 
+            def update(dict, dict2):
+                dict.update(dict2)
+                return dict
 
             # collapse stack for invocation
-            env = reduceRight(lambda acc, cur: acc.update(cur['let']) if isinstance(cur['let'], dict) else acc, {}, view)
-            main = 'def f(*args):'
-            main += '\n  try:'
-            for name in env:
-                main += '\n    '+name+'= args[1]["'+name+'"]'
-            main += '\n    return eval(('+f+'))(args[0])'
-            main += '\n  finally:'
-            for name in env:
-                main += '\n    args[1]["'+name+'"] = '+name
+            env = reduceRight(lambda acc, cur: update(acc, cur['let']) if 'let' in cur and isinstance(cur['let'], dict) else acc, {}, view)
+            main = '''exec(code + "\\n__out__['value'] = func(env, args)", {'env': env, 'args': args, '__out__':__out__})'''
+
             try:
-                return eval(main, params, env)
+                out = {'value': None}
+                exec(main, {'env': env, 'args': params, 'code': f, '__out__': out})
+                return out['value']
             finally:
-                for  name in env:
+                for name in env:
                     set(name, env[name])
 
         while True:
@@ -210,7 +216,7 @@ def conductor(args):
                 stack.insert(0, { 'let': jsonv['let'] }) # JSON.parse(JSON.stringify(jsonv.let))
             elif jsonv['type'] == 'exit':
                 if len(stack) == 0:
-                    return internalError('State '+current+' attempted to pop from an empty stack')
+                    return internalError('State '+str(current)+' attempted to pop from an empty stack')
                 stack = stack[1:]
             elif jsonv['type'] == 'action':
                 return { 'action': jsonv['name'], 'params': params, 'state': { '$resume': { 'state': state, 'stack': stack } } } # invoke continuation
@@ -220,10 +226,10 @@ def conductor(args):
                     result = run(jsonv['exec']['code'])
                 except Exception as error:
                     print(error)
-                    result = { 'error': 'An exception was caught at state '+current+' (see log for details)' }
+                    result = { 'error': 'An exception was caught at state '+str(current)+' (see log for details)' }
 
                 if callable(result):
-                    result = { 'error': 'State '+current+' evaluated to a function' }
+                    result = { 'error': 'State '+str(current)+' evaluated to a function' }
                 # if a function has only side effects and no return value (or return None), return params
 
                 params = params if result is None else result
@@ -233,7 +239,7 @@ def conductor(args):
             elif jsonv['type'] == 'pass':
                 pass
             else:
-                return internalError('State '+current+ 'has an unknown type')
+                return internalError('State '+str(current)+ 'has an unknown type')
 
     return guarded_invoke
 

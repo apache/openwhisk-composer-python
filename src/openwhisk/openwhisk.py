@@ -229,13 +229,13 @@ class Action(Resource):
     def action_body(self, options):
         if 'action' not in options:
             raise Exception(missing_action_body_error)
+        if isinstance(options['action'], dict):
+            return options['action']
 
-        body = { 'exec': { 'kind': options['kind'] if 'kind' in options else 'python:default', 'code': options['action'] } }
+        body = { 'exec': { 'kind': options['kind'] if 'kind' in options else 'python:3', 'code': options['action'] } }
 
         if isinstance(options['action'], bytes):
             body['exec']['code'] = base64.encodebytes(options['action'])
-        elif isinstance(options['action'], dict):
-            return options['action']
 
         if 'limits' in options:
             body['limits'] = options['limits']

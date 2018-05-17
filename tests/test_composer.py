@@ -171,17 +171,17 @@ class TestLoop:
 
     @pytest.mark.skip(reason='need python conductor')
     def test_a_few_iterations(self) :
-        activation = invoke(composer.loop('isNotOne', '({ n }) => ({ "n": n - 1 }))', { 'n': 4 }))
+        activation = invoke(composer.loop('isNotOne', '({ n }) => ({ "n": n - 1 }))'), { 'n': 4 })
         assert activation['response']['result'] == { 'n': 1 }
 
     @pytest.mark.skip(reason='need python conductor')
     def test_no_iteration(self):
-        activation = invoke(composer.loop('() => false', '({ n }) => ({ "n": n - 1 }))', { 'n': 1 }))
+        activation = invoke(composer.loop('() => false', '({ n }) => ({ "n": n - 1 }))'), { 'n': 1 })
         assert activation['response']['result'] == { 'n': 1 }
 
     @pytest.mark.skip(reason='need python conductor')
     def test_nosave_option(self) :
-        activation = invoke(composer.loop_nosave('({ n }) => ({ n, value: n !== 1 })', '({ n }) => ({ n: n - 1 }))', { 'n': 4 }))
+        activation = invoke(composer.loop_nosave('({ n }) => ({ n, value: n !== 1 })', '({ n }) => ({ n: n - 1 }))'), { 'n': 4 })
         assert activation['response']['result'] == { 'value': False, 'n': 1 }
 
 @pytest.mark.skip(reason='need python conductor')
@@ -196,13 +196,13 @@ class TestDoLoop:
         assert activation['response']['result'] == { 'n': 0 }
 
     def test_nosave_option(self) :
-        activation = invoke(composer.doloop_nosave(('{ n }) => ({ n: n - 1 })', '({ n }) => ({ n, value: n !== 1 }))', { 'n': 4 })))
+        activation = invoke(composer.doloop_nosave(('{ n }) => ({ n: n - 1 })', '({ n }) => ({ n, value: n !== 1 }))'), { 'n': 4 }))
         assert activation['response']['result'] == { 'value': False, 'n': 1 }
 
 @pytest.mark.skip(reason='need python conductor')
 class TestDo: # Try
     def test_no_error(self):
-        activation = invoke(composer.do('() => true', 'error => ({ message: error.error })'))
+        activation = invoke(composer.do('() => true', 'error => ({ message: error.error })'), None)
         assert activation['response']['result'] == { 'value': True }
 
     def test_error(self) :

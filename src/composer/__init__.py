@@ -28,11 +28,17 @@ def function(value):
 def when(test, consequent, alternate=None):
     return _composer.when(test, consequent, alternate)
 
+def when_nosave(test, consequent, alternate=None):
+    return _composer.when_nosave(test, consequent, alternate)
+
 def loop(test, body):
-    return _composer._compose('while', (test, body))
+    return _composer.loop(test, body)
 
 def loop_nosave(test, body):
-    return _composer._compose('while_nosave', (test, body))
+    return _composer.loop_nosave(test, body)
+
+def do(body, handler):
+    return _composer._compose('do', (body, handler))
 
 def doloop(body, test):
     return _composer._compose('dowhile', (body, test))
