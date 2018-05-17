@@ -93,13 +93,31 @@ def get_params(env, args):
 def retain_result(env, args):
    return { 'params': env['params'], 'result': args }
 
+def retain_nested_result(env, args):
+    return { 'params': env['params'], 'result': args['result'] }
+
 def dec_count(env, args):
     c = env['count']
     env['count'] -= 1
     return c > 0
 
-# def nest_params(env, args):
+def set_nested_params(env, args):
+    return { 'params': args }
 
+def get_nested_params(env, args):
+    return args['params']
+
+def set_nested_result(env, args):
+    return { 'result': args }
+
+def get_nested_result(env, args):
+    return args['result']
+
+def retry_cond(env, args):
+    result = args['result']
+    count = env['count']
+    env['count'] -= 1
+    return 'error' not in result and count > 0
 
 class Compiler:
 
@@ -130,8 +148,20 @@ class Compiler:
     def loop_nosave(self, test, body):
         return self._compose('while_nosave', (test, body))
 
+    def doloop(self, body, test):
+        return self._compose('dowhile', (body, test))
+
+    def doloop_nosave(self, body, test):
+        return self._compose('dowhile_nosave', (body, test))
+
     def ensure(self, body, finalizer):
         return self._compose('finally', (body, finalizer))
+
+    def retain(self, *arguments):
+        return self._compose('retain', arguments)
+
+    def retain_catch(self, *arguments):
+        return self._compose('retain_catch', arguments)
 
     def mask(self, *arguments):
         return self._compose('mask', arguments)
@@ -196,13 +226,12 @@ class Compiler:
             retain_result)
 
     def _retain_catch(self, composition):
-        # return this.seq(
-        #     this.retain(
-        #         this.finally(
-        #             this.seq(...composition.components),
-        #             result => ({ result }))),
-        #     ({ params, result }) => ({ params, result: result.result }))
-        raise ComposerError('Not Implemented')
+        return self.seq(
+            self.retain(
+                self.ensure(
+                    self.seq(*composition.components),
+                    get_nested_result)),
+            retain_nested_result)
 
     def _if(self, composition):
         return self.let(
@@ -223,14 +252,14 @@ class Compiler:
             get_params)
 
     def _dowhile(self, composition):
-        # return this.let(
-        #     { params: null },
-        #     args => { params = args },
-        #     this.dowhile_nosave(
-        #         this.seq(() => params, this.mask(composition.body), args => { params = args }),
-        #         this.mask(composition.test)),
-        #     () => params)
-        raise ComposerError('Not Implemented')
+        return self.let(
+            { 'params': None },
+            set_params,
+            self.doloop_nosave(
+                self.seq(get_params, self.mask(composition.body), set_params),
+                self.mask(composition.test)),
+            get_params)
+
 
     def _repeat(self, composition):
         return self.let(
@@ -240,14 +269,13 @@ class Compiler:
                 self.mask(self.seq(*composition.components))))
 
     def _retry(self, composition):
-        # return self.let(
-        #     { 'count': composition.count },
-        #     params => ({ params }),
-        #     this.dowhile(
-        #         this.finally(({ params }) => params, this.mask(this.retain_catch(...composition.components))),
-        #         ({ result }) => result.error !== undefined && count-- > 0),
-        #     ({ result }) => result)
-        raise ComposerError('Not Implemented')
+        return self.let(
+            { 'count': composition.count },
+            set_nested_params,
+            self.doloop(
+                self.ensure(get_nested_params, self.mask(self.retain_catch(*composition.components))),
+                retry_cond),
+            get_nested_result)
 
     def _compose(self, type_, arguments):
         combinator = combinators[type_]
@@ -500,6 +528,14 @@ class Composer(Compiler):
                 code += '\n' + inspect.getsource(get_params)
                 code += '\n' + inspect.getsource(set_params)
                 code += '\n' + inspect.getsource(retain_result)
+                code += '\n' + inspect.getsource(retain_nested_result)
+                code += '\n' + inspect.getsource(dec_count)
+                code += '\n' + inspect.getsource(set_nested_params)
+                code += '\n' + inspect.getsource(get_nested_params)
+                code += '\n' + inspect.getsource(set_nested_result)
+                code += '\n' + inspect.getsource(get_nested_result)
+                code += '\n' + inspect.getsource(retry_cond)
+
                 code += '\n' + inspect.getsource(Compiler)
                 code += 'def main(args):'
                 code += '\n    return conductor()(args)'

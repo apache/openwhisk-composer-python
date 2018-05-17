@@ -76,7 +76,6 @@ class TestAction:
         except composer.ComposerError as error:
             assert error.message == 'Name is not valid'
 
-@pytest.mark.literal
 class TestLiteral:
 
     def test_boolean(self):
@@ -94,11 +93,13 @@ class TestLiteral:
         except composer.ComposerError as error:
             assert error.message == 'Invalid argument'
 
-@pytest.mark.skip(reason='need python conductor')
+def isEven(env, args):
+    return args['n'] % 2 == 0
+
 class TestFunction:
 
     def test_function_true(self):
-         activation = invoke(composer.function(lambda args: args['n'] % 2 == 0), { 'n': 4 })
+         activation = invoke(composer.function(isEven), { 'n': 4 })
          assert activation['response']['result'] == { 'value': True }
 
 class TestTasks:
@@ -107,9 +108,8 @@ class TestTasks:
         activation = invoke(composer.task('isNotOne'), { 'n': 0 })
         assert activation['response']['result'] == { 'value': True }
 
-    @pytest.mark.skip(reason='need python conductor')
     def test_task_function(self):
-        activation = invoke(composer.task(lambda args: args['n'] % 2 == 0), { 'n': 4 })
+        activation = invoke(composer.task(isEven), { 'n': 4 })
         assert activation['response']['result'] == { 'value': True }
 
     def test_task_none(self):
@@ -142,6 +142,12 @@ class TestSequence:
         activation = invoke(composer.seq('TripleAndIncrement', 'DivideByTwo', 'DivideByTwo'), { 'n': 5 })
         assert activation['response']['result'] == { 'n': 4 }
 
+def set_then_true(env, args):
+    args['then'] = True
+
+def set_else_true(env, args):
+    args['else'] = True
+
 class TestIf:
     def test_condition_true(self):
         activation = invoke(composer.when('isEven', 'DivideByTwo', 'TripleAndIncrement'), { 'n': 4 })
@@ -159,29 +165,35 @@ class TestIf:
         activation =  invoke(composer.when('isEven', 'DivideByTwo'), { 'n': 3 })
         assert activation['response']['result'] == { 'n': 3 }
 
-    # def test_condition_true_nosave_option(self):
-    #     activation =  invoke(composer.if_nosave('isEven', params => { params.then = true }, params => { params.else = true }), { n: 2 })
-    #     assert activation['response']['result'] == { value: true, then: true }))
+    def test_condition_true_nosave_option(self):
+        activation =  invoke(composer.when_nosave('isEven', set_then_true, set_else_true), { 'n': 2 })
+        assert activation['response']['result'] == { 'value': True, 'then': True }
 
-    # def test_condition_false_nosave_option(self):
-    #     activation = invoke(composer.if_nosave('isEven', params => { params.then = true }, params => { params.else = true }), { n: 3 })
-    #     assert activation['response']['result'] == { value: false, else: true }))
+    def test_condition_false_nosave_option(self):
+        activation = invoke(composer.when_nosave('isEven', set_then_true, set_else_true), { 'n': 3 })
+        assert activation['response']['result'] == { 'value': False, 'else': True }
+
+def dec_n(env, args):
+    return {'n': args['n'] - 1 }
+
+def cond_false(env, args):
+    return False
+
+def cond_nosave(env, args):
+    return { 'n': args['n'], 'value': args['n'] != 1 }
 
 class TestLoop:
 
-    @pytest.mark.skip(reason='need python conductor')
     def test_a_few_iterations(self) :
-        activation = invoke(composer.loop('isNotOne', '({ n }) => ({ "n": n - 1 }))'), { 'n': 4 })
+        activation = invoke(composer.loop('isNotOne', dec_n), { 'n': 4 })
         assert activation['response']['result'] == { 'n': 1 }
 
-    @pytest.mark.skip(reason='need python conductor')
     def test_no_iteration(self):
-        activation = invoke(composer.loop('() => false', '({ n }) => ({ "n": n - 1 }))'), { 'n': 1 })
+        activation = invoke(composer.loop(cond_false, dec_n), { 'n': 1 })
         assert activation['response']['result'] == { 'n': 1 }
 
-    @pytest.mark.skip(reason='need python conductor')
     def test_nosave_option(self) :
-        activation = invoke(composer.loop_nosave('({ n }) => ({ n, value: n !== 1 })', '({ n }) => ({ n: n - 1 }))'), { 'n': 4 })
+        activation = invoke(composer.loop_nosave(cond_nosave, dec_n), { 'n': 4 })
         assert activation['response']['result'] == { 'value': False, 'n': 1 }
 
 @pytest.mark.skip(reason='need python conductor')

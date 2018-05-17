@@ -41,10 +41,10 @@ def do(body, handler):
     return _composer._compose('do', (body, handler))
 
 def doloop(body, test):
-    return _composer._compose('dowhile', (body, test))
+    return _composer.doloop(body, test)
 
 def doloop_nosave(body, test):
-    return _composer._compose('dowhile_nosave', (body, test))
+    return _composer.doloop_nosave(body, test)
 
 def ensure(body, finalizer):
     return _composer._compose('finally', (body, finalizer))
@@ -59,7 +59,7 @@ def retain(*arguments):
     return _composer._compose('retain', arguments)
 
 def retain_catch(*arguments):
-    return _composer._compose('retain_catch', arguments)
+    return _composer.retain_catch(*arguments)
 
 def repeat(count, *arguments):
     return _composer._compose('repeat', (count, *arguments))
