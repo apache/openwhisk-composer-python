@@ -32,7 +32,7 @@ matrix:
     #     - TOXENV=py35,report,coveralls
     - python: '3.6'
       env:
-        - TOXENV=py36,report,coveralls
+        - TOXENV=py36
     # - python: 'pypy-5.4'
     #   env:
     #     - TOXENV=pypy,report,coveralls
