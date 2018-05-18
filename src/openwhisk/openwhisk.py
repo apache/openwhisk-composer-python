@@ -59,6 +59,10 @@ class Client:
         headers = { 'Authorization': self.auth_header(), 'Content-Type': 'application/json' }
         verify = not self.options['ignore_certs']
 
+        print("ignore_certs:", self.options['ignore_certs'])
+
+        print("VERIFY:",  verify)
+
         resp = requests.request(method, url, params=params, data=payload, headers=headers, verify=verify)
 
         if resp.status_code >= 400:
