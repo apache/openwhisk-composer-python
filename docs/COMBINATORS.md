@@ -50,36 +50,36 @@ The optional `options` dictionary makes it possible to provide a definition for 
 ```python
 
 # specify the code for the action as a function reference
-def hello() {
+def hello(env, args):
     return { message: 'hello' }
-}
+
 composer.action('hello', { 'action': hello })
 
 # specify the code for the action as a string
-composer.action('hello', { 'action': "message = 'hello'\ndef main() { return { 'message':message } }" })
+composer.action('hello', { 'action': "message = 'hello'\ndef main(env, args):\n    return { 'message':message }" })
 
 # specify the code and runtime for the action
 composer.action('hello', {
     'action': {
-        'kind': 'nodejs:8',
-        'code': "function () { return { message: 'hello' } }"
+        'kind': 'python:3',
+        'code': "def function(env, args):\n    return { 'message': 'hello' }"
     }
 })
 
 # specify a file containing the code for the action
-composer.action('hello', { 'filename': 'hello.js' })
+composer.action('hello', { 'filename': 'hello.py' })
 
 # specify a sequence of actions
 composer.action('helloAndBye', { 'sequence': ['hello', 'bye'] })
 ```
 The action may be defined by providing the code for the action as a string, as a Python function, or as a file name. Alternatively, a sequence action may be defined by providing the list of sequenced actions. The code (specified as a string) may be annotated with the kind of the action runtime.
 
-### Environment capture (**Not available yet**)
+### Environment capture
 
 Python functions used to define actions cannot capture any part of their declaration environment. The following code is not correct as the declaration of `name` would not be available at invocation time:
 ```Python
 name = 'Dave'
-def main():
+def main(env, args):
   return { 'message': 'Hello ' + name }
 
 composer.action('hello', { 'action': main )
@@ -87,52 +87,47 @@ composer.action('hello', { 'action': main )
 In contrast, the following code is correct as it resolves `name`'s value at composition time.
 ```python
 name = 'Dave'
-composer.action('hello', { 'action': 'lambda: { "message": "Hello ' + name +'"}' })
+composer.action('hello', { 'action': 'lambda env, args: { "message": "Hello ' + name +'"}' })
 ```
 
-## Function (**Not available yet**)
+## Function
 
-`composer.function(fun)` is a composition with a single Javascript function _fun_. It applies the specified function to the input parameter object for the composition.
+`composer.function(fun)` is a composition with a single Python function _fun_. It applies the specified function to the environment and the input parameter object for the composition.
  - If the function returns a value of type `function`, the composition returns an error object.
  - If the function throws an exception, the composition returns an error object. The exception is logged as part of the conductor action invocation.
- - If the function returns a value of type other than function, the value is first converted to a JSON value using `JSON.stringify` followed by `JSON.parse`. If the resulting JSON value is not a JSON dictionary, the JSON value is then wrapped into a `{ value }` dictionary. The composition returns the final JSON dictionary.
- - If the function does not return a value and does not throw an exception, the composition returns the input parameter object for the composition converted to a JSON dictionary using `JSON.stringify` followed by `JSON.parse`.
+ - If the function returns a value of type other than function, the value is first converted to a string using `str` followed by `json.loads`. If the resulting JSON value is not a JSON dictionary, the JSON value is then wrapped into a `{ value }` dictionary. The composition returns the final JSON dictionary. (**Not supported yet**)
+ - If the function does not return a value and does not throw an exception, the composition returns the input parameter object for the composition converted to a string using `str` followed by `json.loads`.
 
 Examples:
-```javascript
-composer.function(params => ({ message: 'Hello ' + params.name }))
-composer.function(function () { return { error: 'error' } })
+```python
+def fun(env, params):
+    return { 'message': 'Hello ' + params['name'] }
+composer.function(fun)
 
-function product({ x, y }) { return { product: x * y } }
+def err(env, params):
+    return { 'error': 'error' }
+composer.function(err)
+
+
+def product(env, params):
+    return { 'product': params['x'] * params['y'] }
 composer.function(product)
-```
-
-### Environment capture (**Not available yet**)
-
-Functions intended for compositions cannot capture any part of their declaration environment. They may however access and mutate variables in an environment consisting of the variables declared by the [composer.let](#Let) combinator discussed below.
-
-The following is not legal:
-```javascript
-let name = 'Dave'
-composer.function(params => ({ message: 'Hello ' + name }))
-```
-The following is legal:
-```javascript
-composer.let({ name: 'Dave' }, composer.function(params => ({ message: 'Hello ' + name })))
 ```
 
 ## Literal
 
-`composer.literal(value)` and its synonymous `composer.value(value)` output a constant JSON dictionary. This dictionary is obtained by first converting the _value_ argument to JSON using `JSON.stringify` followed by `JSON.parse`. If the resulting JSON value is not a JSON dictionary, the JSON value is then wrapped into a `{ value }` dictionary.
+`composer.literal(value)` and its synonymous `composer.value(value)` output a constant JSON dictionary. This dictionary is obtained by first converting the _value_ argument to JSON using `str` followed by `json.loads`. If the resulting JSON value is not a JSON dictionary, the JSON value is then wrapped into a `{ value }` dictionary.
 
 The _value_ argument may be computed at composition time. For instance, the following composition captures the date at the time the composition is encoded to JSON:
-```javascript
+```python
 composer.sequence(
-    composer.literal(Date()),
-    composer.action('log', { action: params => ({ message: 'Composition time: ' + params.value }) }))
+    composer.literal(datetime.datetime.now()),
+    composer.action('log', { action: lambda env, params: { 'message': 'Composition time: ' + params['value'] } }))
 ```
 
-JSON values cannot represent functions. Applying `composer.literal` to a value of type `'function'` will result in an error. Functions embedded in a `value` of type `'object'`, e.g., `{ f: p => p, n: 42 }` will be silently omitted from the JSON dictionary. In other words, `composer.literal({ f: p => p, n: 42 })` will output `{ n: 42 }`.
+**Note: lambda is not supported yet**
+
+JSON values cannot represent functions. Applying `composer.literal` to a value of type `'function'` will result in an error. Functions embedded in a `value` of type `'object'`, e.g., `{ 'f': lambda p:p, 'n': 42 }` will be silently omitted from the JSON dictionary. In other words, `composer.literal({ 'f': lambda p:p, 'n': 42 })` will output `{ 'n': 42 }`.
 
 In general, a function can be embedded in a composition either by using the `composer.function` combinator, or by embedding the source code for the function as a string and later using `eval` to evaluate the function code.
 
@@ -180,17 +175,17 @@ composer.let({ 'i': n }, composer.loop(dec, composition))
 ```
 Variables declared with `composer.let` are not visible to invoked actions. However, they may be passed as parameters to actions as for instance in:
 ```python
-composer.let({ n: 42 }, () => ({ n }), 'increment', params => { n = params.n })
+composer.let({ n: 42 }, lambda env, params: { 'n': env['n'] }, 'increment', lambda env, params: env['n'] = params['n'])
 ```
 
-In this example, the variable `n` is exposed to the invoked action as a field of the input parameter object. Moreover, the value of the field `n` of the output parameter object is assigned back to variable `n`.
+In this example, the variable `n` is exposed to the invoked action as a field of the input environment object. Moreover, the value of the field `n` of the output environment object is assigned back to variable `n`.
 
 ## Mask
 
 `composer.mask(composition)` is meant to be used in combination with the `let` combinator. It makes it possible to hide the innermost enclosing `let` combinator from _composition_. It is typically used to define composition templates that need to introduce variables.
 
 For instance, the following function is a possible implementation of a repeat loop:
-```javascript
+```python
 function loop(n, composition) {
     return .let({ n }, composer.while(() => n-- > 0, composer.mask(composition)))
 }

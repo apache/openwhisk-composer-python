@@ -36,7 +36,7 @@ export).
 
 This repository includes:
 * the [composer](docs/COMPOSER.md) Python library for authoring compositions using Python,
-* the [compose](docs/COMPOSE.md) command for deploying compositions (**Not available  yet**),
+* the [pycompose](docs/COMPOSE.md) command for deploying compositions,
 * [documentation](docs), [examples](samples), and [tests](tests).
 
 Composer and Shell are currently available as _IBM Research previews_. As
@@ -71,16 +71,16 @@ which implements the usual conditional construct. It take three actions (or
 compositions) as parameters. It invokes the first one and, depending on the
 result of this invocation, invokes either the second or third action.
 
-## Deploying a composition (**Not available yet**)
+## Deploying a composition
 
-One way to deploy a composition is to use the [compose](docs/COMPOSE.md) command:
+One way to deploy a composition is to use the [pycompose](docs/COMPOSE.md) command:
 ```
-compose demo.py --deploy demo
+pycompose demo.py --deploy demo
 ```
 ```
 ok: created actions /_/authenticate,/_/success,/_/failure,/_/demo
 ```
-The `compose` command synthesizes and deploys an action named `demo` that
+The `pycompose` command synthesizes and deploys an action named `demo` that
 implements the composition. It also deploys the composed actions if definitions
 are provided for them.
 
