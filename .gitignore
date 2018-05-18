@@ -64,4 +64,3 @@ docs/_build
 .appveyor.token
 *.bak
 *.vscode
-ci

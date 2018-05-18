@@ -1,15 +1,18 @@
 graft docs
 graft src
-graft ci
 graft tests
 
 include .bumpversion.cfg
 include .coveragerc
 
-include CONTRIBUTING.md
+include *.md
+include samples/demo.py
 include LICENSE
 include README.md
+include CLA-CORPORATE.md
+include CLA-INDIVIDUAL.md
 
 include tox.ini .travis.yml
+include travis/*.sh
 
-global-exclude *.py[cod] __pycache__ *.so *.dylib
+global-exclude *.py[cod] __pycache__

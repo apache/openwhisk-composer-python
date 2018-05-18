@@ -43,6 +43,8 @@ def main():
             print(err)
     elif args.encode is True:
         print(composer.encode(composer.composition('anonymous', composition), lower)['actions'][-1]['action']['exec']['code'])
+    else:
+        print(str(composer.lower(composition, lower)))
 
 if __name__ == '__main__':
     main()

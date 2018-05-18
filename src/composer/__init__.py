@@ -73,5 +73,8 @@ def deserialize(composition):
 def encode(composition, localcombinators=[]):
     return _composer.encode(composition, localcombinators)
 
+def lower(composition, combinators = []):
+    return _composer.lower(composition, combinators)
+
 def openwhisk(options):
     return _composer.openwhisk(options)
