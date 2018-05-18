@@ -3,6 +3,13 @@ sudo: required
 dist: trusty
 services:
   - docker
+addons:
+  apt:
+    sources:
+    - sourceline: 'ppa:deadsnakes/ppa'
+    packages:
+    - python3.6
+
 env:
   global:
     - IGNORE_CERTS=true
@@ -30,9 +37,6 @@ matrix:
     #   env:
     #     - TOXENV=pypy,report,coveralls
 before_install:
-  - sudo add-apt-repository ppa:fkrull/deadsnakes
-  - sudo apt-get update -q
-  - sudo apt-get install python3.6 -y
   - python --version
   - uname -a
 install:
