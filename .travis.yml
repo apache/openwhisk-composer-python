@@ -1,13 +1,17 @@
-language: python
+language: generic
 sudo: required
 dist: trusty
 services:
   - docker
-cache: pip
+addons:
+  apt:
+    sources:
+    - deadsnakes
+    packages:
+    - python3.6
+
 env:
   global:
-    - LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
-    - SEGFAULT_SIGNALS=all
     - IGNORE_CERTS=true
     - REDIS=redis://172.17.0.1:6379
   matrix:
@@ -35,7 +39,6 @@ matrix:
 before_install:
   - python --version
   - uname -a
-  - lsb_release -a
 install:
   - pip install tox
   - virtualenv --version
