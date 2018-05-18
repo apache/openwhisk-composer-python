@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-OLD_VIRTUAL_ENV=$VIRTUAL_ENV
-deactivate
-
 # Build script for Travis-CI.
 ROOTDIR=$TRAVIS_BUILD_DIR
 IMAGE_PREFIX="composer"
@@ -50,5 +47,3 @@ WHISK_CLI="${WHISKDIR}/bin/wsk -i"
 
 ${WHISK_CLI} property set --apihost ${WHISK_APIHOST} --auth ${WHISK_AUTH}
 ${WHISK_CLI} property get
-
-source ${OLD_VIRTUAL_ENV}/bin/activate
