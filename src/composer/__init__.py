@@ -67,5 +67,11 @@ def repeat(count, *arguments):
 def retry(count, *arguments):
     return _composer._compose('retry', (count, *arguments))
 
+def deserialize(composition):
+    return _composer.deserialize(composition)
+
+def encode(composition, localcombinators=[]):
+    return _composer.encode(composition, localcombinators)
+
 def openwhisk(options):
     return _composer.openwhisk(options)

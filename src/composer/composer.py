@@ -430,6 +430,7 @@ class Compositions:
                 except Exception:
                     pass
                 self.actions.update(action)
+        return obj
 
 class Composer(Compiler):
     def action(self, name, options = {}):

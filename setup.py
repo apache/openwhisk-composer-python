@@ -36,6 +36,11 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
     zip_safe=False,
+    entry_points = {
+        'console_scripts': [
+            'pycompose = composer.__main__:main'
+        ]
+    },
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 2 - Pre-Alpha',
