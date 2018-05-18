@@ -40,7 +40,7 @@ before_install:
   - python --version
   - uname -a
 install:
-  - pip install tox
+  - sudo pip install tox
   - virtualenv --version
   - easy_install --version
   - pip --version
