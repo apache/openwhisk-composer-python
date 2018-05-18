@@ -19,6 +19,8 @@ docker pull openwhisk/invoker
 docker tag openwhisk/invoker ${IMAGE_PREFIX}/invoker
 docker pull openwhisk/nodejs6action
 docker tag openwhisk/nodejs6action ${IMAGE_PREFIX}/nodejs6action
+docker pull openwhisk/python3action
+docker tag openwhisk/python3action ${IMAGE_PREFIX}/python3action
 
 # Deploy OpenWhisk
 cd $WHISKDIR/ansible
