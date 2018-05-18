@@ -82,19 +82,19 @@ class Composition:
 
 
 def get_value(env, args):
-   return env['value']
+    return env['value']
 
 def set_params(env, args):
-   env['params'] = args
+    env['params'] = args
 
 def get_params(env, args):
-   return env['params']
+    return env['params']
 
 def retain_result(env, args):
-   return { 'params': env['params'], 'result': args }
+    return { 'params': env['params'], 'result': args }
 
 def retain_nested_result(env, args):
-    return { 'params': env['params'], 'result': args['result'] }
+    return { 'params': args['params'], 'result': args['result']['result'] }
 
 def dec_count(env, args):
     c = env['count']
@@ -117,7 +117,7 @@ def retry_cond(env, args):
     result = args['result']
     count = env['count']
     env['count'] -= 1
-    return 'error' not in result and count > 0
+    return 'error' in result and count > 0
 
 class Compiler:
 
@@ -193,11 +193,9 @@ class Compiler:
             except OSError:
                 raise ComposerError('Invalid argument', fun)
 
-        print(fun)
         if isinstance(fun, str):
             # standardize function name
             fun = re.sub(r'def\s+([a-zA-Z_][a-zA-Z_0-9]*)\s*\(', 'def func(', fun)
-
             fun = { 'kind': 'python:3', 'code': fun }
 
         if not isinstance(fun, dict) or fun is None:
@@ -231,7 +229,7 @@ class Compiler:
             self.retain(
                 self.ensure(
                     self.seq(*composition.components),
-                    get_nested_result)),
+                    set_nested_result)),
             retain_nested_result)
 
     def _if(self, composition):
@@ -540,8 +538,6 @@ class Composer(Compiler):
                 code += '\n' + inspect.getsource(Compiler)
                 code += 'def main(args):'
                 code += '\n    return conductor()(args)'
-
-                print(code)
 
                 composition.action = { 'exec': { 'kind': 'python:3', 'code':code }, 'annotations': [{ 'key': 'conductor', 'value': str(composition.composition) }, { 'key': 'composer', 'value': __version__ }] }
 

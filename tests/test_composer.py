@@ -376,8 +376,8 @@ class TestRetry:
         try:
             invoke(composer.let({ 'x': 2 }, composer.retry(1, retry_test)))
             assert False
-        except composer.ComposerError as err:
-            assert err.error.response.result.error, 'foo'
+        except Exception as err:
+            assert err.error['response']['result'] == { 'error': 'foo' }
 
     def test_invalid_argument(self) :
         try:
