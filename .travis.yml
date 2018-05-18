@@ -6,7 +6,7 @@ services:
 addons:
   apt:
     sources:
-    - deadsnakes
+    - ppa:fkrull/deadsnakes
     packages:
     - python3.6
 
