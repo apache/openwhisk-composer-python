@@ -13,6 +13,9 @@
 # limitations under the License.
 import functools
 import json
+import marshal
+import base64 
+import types
 
 # dummy composition and compiler
 composition = {} # will be overridden
@@ -150,7 +153,7 @@ def conductor():
             inspect_errors() # handle error objects when resuming
 
         # run function f on current stack
-        def run(f):
+        def run(f, kind):
             # handle let/mask pairs
             view = []
             n = 0
@@ -184,11 +187,16 @@ def conductor():
 
             # collapse stack for invocation
             env = reduceRight(lambda acc, cur: update(acc, cur['let']) if 'let' in cur and isinstance(cur['let'], dict) else acc, {}, view)
-            main = '''exec(code + "\\n__out__['value'] = func(env, args)", {'env': env, 'args': args, '__out__':__out__})'''
+            if kind == 'python:3':
+                main = '''exec(code + "\\n__out__['value'] = func(env, args)", {'env': env, 'args': args, '__out__':__out__})'''
+                code = f
+            else: # lambda
+                main = '''__out__['value'] = code(env, args)'''
+                code = types.FunctionType(marshal.loads(base64.b64decode(bytearray(f, 'ASCII'))), {})
 
             try:
                 out = {'value': None}
-                exec(main, {'env': env, 'args': params, 'code': f, '__out__': out})
+                exec(main, {'env': env, 'args': params, 'code': code, '__out__': out})
                 return out['value']
             finally:
                 for name in env:
@@ -225,7 +233,7 @@ def conductor():
             elif jsonv['type'] == 'function':
                 result = None
                 try:
-                    result = run(jsonv['exec']['code'])
+                    result = run(jsonv['exec']['code'], jsonv['exec']['kind'])
                 except Exception as error:
                     print(error)
                     result = { 'error': 'An exception was caught at state '+str(current)+' (see log for details)' }

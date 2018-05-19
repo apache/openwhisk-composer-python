@@ -2,7 +2,6 @@ import argparse
 import json
 import composer
 from composer import __version__
-import traceback
 
 def main():
     parser = argparse.ArgumentParser(description='process compositions', prog='pycompose', usage='%(prog)s composition.[py|json] command [flags]')
@@ -39,7 +38,6 @@ def main():
             names = ', '.join(map(lambda action: action['name'], obj['actions']))
             print('ok: created action'+'s' if len(names) > 1 else ''+names)
         except Exception as err:
-            traceback.print_exc()
             print(err)
     elif args.encode is True:
         print(composer.encode(composer.composition('anonymous', composition), lower)['actions'][-1]['action']['exec']['code'])

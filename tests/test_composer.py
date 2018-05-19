@@ -144,6 +144,10 @@ class TestFunction:
          activation = invoke(composer.function(isEven), { 'n': 4 })
          assert activation['response']['result'] == { 'value': True }
 
+    def test_lambda(self):
+         activation = invoke(composer.function(lambda env, args: args['n'] % 2 == 0), { 'n': 4 })
+         assert activation['response']['result'] == { 'value': True }
+
 class TestTasks:
 
     def test_task_action(self):
@@ -212,7 +216,7 @@ class TestIf:
 class TestLoop:
 
     def test_a_few_iterations(self) :
-        activation = invoke(composer.loop('isNotOne', dec_n), { 'n': 4 })
+        activation = invoke(composer.loop('isNotOne', lambda env, args: {'n': args['n'] - 1 }), { 'n': 4 })
         assert activation['response']['result'] == { 'n': 1 }
 
     def test_no_iteration(self):

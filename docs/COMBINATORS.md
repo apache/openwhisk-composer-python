@@ -100,14 +100,9 @@ composer.action('hello', { 'action': 'lambda env, args: { "message": "Hello ' + 
 
 Examples:
 ```python
-def fun(env, params):
-    return { 'message': 'Hello ' + params['name'] }
-composer.function(fun)
+composer.function(lambda env, args: { 'message': 'Hello ' + params['name'] })
 
-def err(env, params):
-    return { 'error': 'error' }
-composer.function(err)
-
+composer.function(lambda env, args: { 'error': 'error' })
 
 def product(env, params):
     return { 'product': params['x'] * params['y'] }
@@ -124,8 +119,6 @@ composer.sequence(
     composer.literal(datetime.datetime.now()),
     composer.action('log', { action: lambda env, params: { 'message': 'Composition time: ' + params['value'] } }))
 ```
-
-**Note: lambda is not supported yet**
 
 JSON values cannot represent functions. Applying `composer.literal` to a value of type `'function'` will result in an error. Functions embedded in a `value` of type `'object'`, e.g., `{ 'f': lambda p:p, 'n': 42 }` will be silently omitted from the JSON dictionary. In other words, `composer.literal({ 'f': lambda p:p, 'n': 42 })` will output `{ 'n': 42 }`.
 
@@ -175,7 +168,10 @@ composer.let({ 'i': n }, composer.loop(dec, composition))
 ```
 Variables declared with `composer.let` are not visible to invoked actions. However, they may be passed as parameters to actions as for instance in:
 ```python
-composer.let({ n: 42 }, lambda env, params: { 'n': env['n'] }, 'increment', lambda env, params: env['n'] = params['n'])
+def assign_n(env, params):
+    env['n'] = params['n']
+
+composer.let({ 'n': 42 }, lambda env, params: { 'n': env['n'] }, 'increment', assign_n)
 ```
 
 In this example, the variable `n` is exposed to the invoked action as a field of the input environment object. Moreover, the value of the field `n` of the output environment object is assigned back to variable `n`.
