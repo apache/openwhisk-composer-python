@@ -5,8 +5,6 @@
 [![Join
 Slack](https://img.shields.io/badge/join-slack-9B69A0.svg)](http://slack.openwhisk.org/)
 
-DISCLAIMER: Work in progress. In particular the documentation hasn't been fully updated.
-
 This repository provides a Python library for [Composer](https://github.com/ibm-functions/composer/). For convenience, the Composer documentation is repeated below using Python bindings instead of JavaScript.
 
 
@@ -44,11 +42,25 @@ Composer and Shell continue to evolve, it may be necessary to redeploy existing
 compositions to take advantage of new capabilities. However existing
 compositions should continue to run fine without redeployment.
 
-## Installation (**Not available yet**)
+## Installation 
 
+You need python3.6 installed on your system.
+
+### From github
+
+
+```bash
+$ git clone git@github.ibm.com:villard/composer-python.git
+$ cd composer-python
+$ pip3 install -e .
+$ pycompose -h
+usage: pycompose composition.[py|json] command [flags]
+```
+
+### From PyPi (**Not available yet**)
 Composer is distributed on [PyPi](https://pypi.org/). To install this package, use `pip`:
 ```
-pip install ibm-functions-composer
+$ pip3 install ibm-functions-composer
 ```
 Shell embeds the Composer package, so there is no need to install
 Composer for Python explicitly when using Shell.

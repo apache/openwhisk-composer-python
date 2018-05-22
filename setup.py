@@ -71,5 +71,6 @@ setup(
         'composer',
         'bluemix',
         'openwhisk',
-    ]
+    ],
+    install_requires=['requests']
 )
