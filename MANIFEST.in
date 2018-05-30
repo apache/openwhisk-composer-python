@@ -16,5 +16,7 @@ include tox.ini .travis.yml
 include travis/*.sh
 
 prune action
+exclude index.js
+exclude package.json 
 
 global-exclude *.py[cod] __pycache__
