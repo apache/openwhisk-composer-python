@@ -15,4 +15,6 @@ include CLA-INDIVIDUAL.md
 include tox.ini .travis.yml
 include travis/*.sh
 
+prune action
+
 global-exclude *.py[cod] __pycache__
