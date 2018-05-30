@@ -15,7 +15,6 @@
 import json
 import os
 import sys
-import openwhisk
 import inspect
 import re
 import base64
@@ -491,6 +490,7 @@ class Composer(Compiler):
         if '__OW_API_KEY' in os.environ:
              options['api_key'] = os.environ['__OW_API_KEY']
 
+        import openwhisk
         wsk = openwhisk.Client(options)
         wsk.compositions = Compositions(wsk, self)
         return wsk
