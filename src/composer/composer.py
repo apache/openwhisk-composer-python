@@ -555,7 +555,7 @@ class Composer(Compiler):
                 composition.type = 'action'
 
             if composition.type == 'action' and hasattr(composition, 'action'):
-                actions.append({ 'name': composition.name, 'action': composition.action, 'serializer': serialize })
+                actions.append({ 'name': composition.name, 'action': composition.action })
                 del composition.action
 
             return composition
