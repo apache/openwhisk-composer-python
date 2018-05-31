@@ -1,0 +1,21 @@
+{
+  "name": "composer-python",
+  "version": "1.0.0",
+  "description": "[![Build Status](https://travis.ibm.com/villard/composer-python.svg?token=bc6xtkRixk96zbXuAu7U&branch=master)](https://travis.ibm.com/villard/composer-python) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Join Slack](https://img.shields.io/badge/join-slack-9B69A0.svg)](http://slack.openwhisk.org/)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "postinstall": "cd action && ./build.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.ibm.com:nickm/composer-python.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0"
+}
