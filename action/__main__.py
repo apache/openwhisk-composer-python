@@ -17,19 +17,42 @@
 import composer
 import json
 
+from composer import deserialize
+
 #
 # this is the main method for running the pycomposer as an OpenWhisk action
 #
 def compose(args):
-    if args['source'] is None:
-        raise Exception('Please provide a source parameter')
+    if 'source' not in args and 'composition' not in args:
+        raise Exception('Please provide a source or composition parameter')
 
-    composition = eval(args['source'])
-    print(args['source'])
+    if 'composition' in args:
+        print('accepting composition as input')
+        print(args['composition'])
+        composition = deserialize(args['composition'])
+    else:
+        print(args['source'])
+        composition = eval(args['source'])
 
-    if args['lower'] is not None:
+    if 'lower' in args:
         res = composer.lower(composition, args['lower'])
         print(str(res))
         return json.loads(str(res))
     else:
-        return { "code": composer.encode(composer.composition('anonymous', composition), lower)['actions'][-1]['action']['exec']['code'] }
+        if 'name' in args:
+            name = 'anonymous'
+        else:
+            name = args['name']
+
+        compat = args['encode']
+
+        comp = composer.encode(composer.composition(name, composition), compat)
+        comp['composition'] = json.loads(str(composer.lower(comp['composition'], compat)))
+
+        print('success in encode')
+        print(comp)
+        print(str(comp))
+
+        return comp
+#        return { "code": composer.encode(composer.composition(name, composition), args['encode'])['actions'][-1]['action']['exec']['code'] }
+ 
