@@ -457,13 +457,18 @@ class Composer(Compiler):
         #     if (exec.indexOf('[native code]') !== -1) throw new ComposerError('Cannot capture native function', options.action)
         # }
 
+        composition = {'type':'action', 'name':name}
+
         if hasattr(options, 'action') and (isinstance(options['action'], str) or isinstance(options['action'],  dict)):
             exec = options['action']
 
         if isinstance(exec, str):
             exec = { 'kind': 'python:3', 'code': exec }
 
-        return Composition({'type':'action', 'exec':exec, 'name':name})
+        if exec is not None:
+            composition['exec'] = exec
+
+        return Composition(composition)
 
     def openwhisk(self, options):
         ''' return enhanced openwhisk client capable of deploying compositions '''
