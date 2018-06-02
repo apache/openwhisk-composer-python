@@ -214,8 +214,8 @@ def conductor():
 
             # process one state
             jsonv = fsm[state] # jsonv definition for current state
-            if 'path' in jsonv:
-                print('Entering composition'+jsonv['path'])
+            if hasattr(jsonv, 'path'):
+                print('Entering composition'+jsonv.path)
             current = state
             state = current + jsonv['next'] if 'next' in jsonv else None # default next state
             if jsonv['type'] == 'choice':
