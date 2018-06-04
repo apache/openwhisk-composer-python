@@ -74,12 +74,12 @@ class Composition:
 
         combinator = combinators[getattr(self, 'type')]
         if 'components' in combinator:
-            self.components = tuple(map(lambda c: f(c, None), self.components))
+            self.components = [f(c, str(idx), True) for idx,c in enumerate(self.components)]
 
         if 'args' in combinator:
             for arg in combinator['args']:
                 if 'type' not in arg:
-                    setattr(self, arg['_'], f(getattr(self, arg['_']), arg['_']))
+                    setattr(self, arg['_'], f(getattr(self, arg['_']), arg['_'], False))
 
 
 def get_value(env, args):
@@ -315,7 +315,7 @@ class Compiler:
         ''' recursively deserialize composition '''
 
         composition = Composition(composition)
-        composition.visit(lambda composition, name: self.deserialize(composition))
+        composition.visit(lambda composition, name, ignore=False: self.deserialize(composition))
         return composition
 
     def label(self, composition):
@@ -325,13 +325,12 @@ class Compiler:
             raise ComposerError('Invalid argument', composition)
 
         def label(path):
-
-            def labeler(composition, name, array=None) :
+            def labeler(composition, name, array=False):
                 nonlocal path
                 composition = Composition(composition)
                 segment = ''
                 if name is not None:
-                    if array is not None:
+                    if array:
                         segment = '['+name+']'
                     else:
                         segment = '.'+name
@@ -362,7 +361,7 @@ class Compiler:
         # if isinstance(combinators, str): # lower to combinators of specific composer version
         #     combinators = Object.keys(this.combinators).filter(key => semver.gte(combinators, this.combinators[key].since))
 
-        def lower(composition, name):
+        def lower(composition, name, ignore=False):
             composition =  Composition(composition) # copy
             # repeatedly lower root combinator
 
@@ -525,7 +524,7 @@ class Composer(Compiler):
         def escape(str):
             return re.sub(r'(\n|\t|\r|\f|\v|\\|\')', lambda m:{'\n':'\\n','\t':'\\t','\r':'\\r','^\f':'\\f','\v':'\\v','\\':'\\\\','\'':'\\\''}[m.group()], str)
 
-        def encode(composition, name):
+        def encode(composition, name, ignore=False):
             composition = Composition(composition)
             composition.visit(encode)
             if composition.type == 'composition':

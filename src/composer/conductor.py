@@ -100,10 +100,16 @@ def conductor():
     isObject = lambda x: isinstance(x, dict)
 
     def encodeError(error):
-        return {
-            'code': error['code'] if isinstance(error['code'], int) else 500,
-            'error': error['error'] if isinstance(error['error'], str) else (error['message'] if 'message' in error else (error if isinstance(error, str) else 'An internal error occurred'))
-        }
+        if isinstance(error, str) or not hasattr(error, "__getitem__"):
+            return {
+                'code': 500,
+                'error': error
+            }
+        else:
+            return {
+                'code': error['code'] if isinstance(error['code'], int) else 500,
+                'error': error['error'] if isinstance(error['error'], str) else (error['message'] if 'message' in error else 'An internal error occurred')
+            }
 
     # error status codes
     badRequest = lambda error: { 'code': 400, 'error': error }
@@ -214,8 +220,8 @@ def conductor():
 
             # process one state
             jsonv = fsm[state] # jsonv definition for current state
-            if hasattr(jsonv, 'path'):
-                print('Entering composition'+jsonv.path)
+            if 'path' in jsonv:
+                print('Entering composition'+jsonv['path'])
             current = state
             state = current + jsonv['next'] if 'next' in jsonv else None # default next state
             if jsonv['type'] == 'choice':
