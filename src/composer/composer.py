@@ -201,8 +201,11 @@ class Compiler:
         if isinstance(exc, str):
             if exc.startswith('def'):
                 # standardize function name
-                exc = re.sub(r'def\s+([a-zA-Z_][a-zA-Z_0-9]*)\s*\(', 'def func(', exc)
-                exc = { 'kind': 'python:3', 'code': exc }
+                pattern = re.compile('def\s+([a-zA-Z_][a-zA-Z_0-9]*)\s*\(')
+                match = pattern.match(exc)
+                functionName = match.group(1)
+#                exc = pattern.sub('def func(', exc)
+                exc = { 'kind': 'python:3', 'code': exc, 'functionName': functionName }
             else: # lambda 
                 exc = { 'kind': 'python:3+lambda', 'code': exc }
 

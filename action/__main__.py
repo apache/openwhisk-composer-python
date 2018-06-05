@@ -19,6 +19,9 @@ import json
 
 from composer import deserialize
 
+class My:
+    composition = None
+
 #
 # this is the main method for running the pycomposer as an OpenWhisk action
 #
@@ -28,11 +31,44 @@ def compose(args):
 
     if 'composition' in args:
         print('accepting composition as input')
-        print(args['composition'])
+#        print(args['composition'])
         composition = deserialize(args['composition'])
     else:
-        print(args['source'])
-        composition = eval(args['source'])
+        print('accepting source as input')
+#        print(args['source'])
+#        composition = eval(args['source'])
+        code = args['source']
+
+        try:
+            print('trying eval')
+            composition = eval(code)
+            print('eval worked!')
+
+        except SyntaxError as error:
+            # if the code isn't an expression, eval will fail with a syntax error;
+            # admittedly the eval might've failed for a more "true" syntax error, but
+            # the best we can do is hope for the best, and resort to an exec
+            print('eval did not work; falling back to exec')
+
+            name = args['name'] if 'name' in args else 'action'
+            path = f'/tmp/{name}'
+            file = open(path, 'w')
+            file.write(code)
+            file.close()
+
+            file = open(path, 'r')
+
+            try:
+                x = compile(file.read(), path, 'exec')
+                my = My()
+                exec(x, {'my': my, 'composer': composer})  # we use `my` as an outval
+                composition = my.composition
+
+            finally:
+                file.close()
+
+            if composition is None:
+                raise Exception('Source did not produce a composition')
 
     if 'lower' in args:
         res = composer.lower(composition, args['lower'])
@@ -50,8 +86,6 @@ def compose(args):
         comp['composition'] = json.loads(str(composer.lower(comp['composition'], compat)))
 
         print('success in encode')
-        print(comp)
-        print(str(comp))
 
         return comp
 #        return { "code": composer.encode(composer.composition(name, composition), args['encode'])['actions'][-1]['action']['exec']['code'] }
