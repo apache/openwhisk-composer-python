@@ -159,7 +159,7 @@ def conductor():
             inspect_errors() # handle error objects when resuming
 
         # run function f on current stack
-        def run(f, kind):
+        def run(f, kind, functionName=None):
             # handle let/mask pairs
             view = []
             n = 0
@@ -194,7 +194,7 @@ def conductor():
             # collapse stack for invocation
             env = reduceRight(lambda acc, cur: update(acc, cur['let']) if 'let' in cur and isinstance(cur['let'], dict) else acc, {}, view)
             if kind == 'python:3':
-                main = '''exec(code + "\\n__out__['value'] = func(env, args)", {'env': env, 'args': args, '__out__':__out__})'''
+                main = '''exec(code + "\\n__out__['value'] = ''' + functionName + '''(env, args)", {'env': env, 'args': args, '__out__':__out__})'''
                 code = f
             else: # lambda
                 main = '''__out__['value'] = code(env, args)'''
@@ -239,7 +239,8 @@ def conductor():
             elif jsonv['type'] == 'function':
                 result = None
                 try:
-                    result = run(jsonv['exec']['code'], jsonv['exec']['kind'])
+                    functionName = jsonv['exec']['functionName'] if 'functionName' in jsonv['exec'] else None
+                    result = run(jsonv['exec']['code'], jsonv['exec']['kind'], functionName)
                 except Exception as error:
                     print(error)
                     result = { 'error': 'An exception was caught at state '+str(current)+' (see log for details)' }
