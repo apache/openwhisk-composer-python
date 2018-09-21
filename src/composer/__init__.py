@@ -1,80 +1,82 @@
 __version__ = '0.1.0'
 
-from .composer import Composer, ComposerError, parse_action_name
 
-_composer = Composer()
 
-def composition(name, task):
-    return _composer.composition(name, task)
+# from .composer import Composer, ComposerError, parse_action_name
 
-def seq(*arguments):
-    return _composer.sequence(*arguments)
+# _composer = Composer()
 
-def sequence(*arguments):
-    return _composer.sequence(*arguments)
+# def composition(name, task):
+#     return _composer.composition(name, task)
 
-def literal(value):
-    return _composer.literal(value)
+# def seq(*arguments):
+#     return _composer.sequence(*arguments)
 
-def action(name, action=None):
-    return _composer.action(name, action)
+# def sequence(*arguments):
+#     return _composer.sequence(*arguments)
 
-def task(task):
-    return _composer.task(task)
+# def literal(value):
+#     return _composer.literal(value)
 
-def function(value):
-    return _composer.function(value)
+# def action(name, action=None):
+#     return _composer.action(name, action)
 
-def when(test, consequent, alternate=None):
-    return _composer.when(test, consequent, alternate)
+# def task(task):
+#     return _composer.task(task)
 
-def when_nosave(test, consequent, alternate=None):
-    return _composer.when_nosave(test, consequent, alternate)
+# def function(value):
+#     return _composer.function(value)
 
-def loop(test, body):
-    return _composer.loop(test, body)
+# def when(test, consequent, alternate=None):
+#     return _composer.when(test, consequent, alternate)
 
-def loop_nosave(test, body):
-    return _composer.loop_nosave(test, body)
+# def when_nosave(test, consequent, alternate=None):
+#     return _composer.when_nosave(test, consequent, alternate)
 
-def do(body, handler):
-    return _composer._compose('try', (body, handler))
+# def loop(test, body):
+#     return _composer.loop(test, body)
 
-def doloop(body, test):
-    return _composer.doloop(body, test)
+# def loop_nosave(test, body):
+#     return _composer.loop_nosave(test, body)
 
-def doloop_nosave(body, test):
-    return _composer.doloop_nosave(body, test)
+# def do(body, handler):
+#     return _composer._compose('try', (body, handler))
 
-def ensure(body, finalizer):
-    return _composer._compose('finally', (body, finalizer))
+# def doloop(body, test):
+#     return _composer.doloop(body, test)
 
-def let(declarations, *arguments):
-    return _composer._compose('let', (declarations, *arguments))
+# def doloop_nosave(body, test):
+#     return _composer.doloop_nosave(body, test)
 
-def mask(*arguments):
-    return _composer._compose('mask', arguments)
+# def ensure(body, finalizer):
+#     return _composer._compose('finally', (body, finalizer))
 
-def retain(*arguments):
-    return _composer._compose('retain', arguments)
+# def let(declarations, *arguments):
+#     return _composer._compose('let', (declarations, *arguments))
 
-def retain_catch(*arguments):
-    return _composer.retain_catch(*arguments)
+# def mask(*arguments):
+#     return _composer._compose('mask', arguments)
 
-def repeat(count, *arguments):
-    return _composer._compose('repeat', (count, *arguments))
+# def retain(*arguments):
+#     return _composer._compose('retain', arguments)
 
-def retry(count, *arguments):
-    return _composer._compose('retry', (count, *arguments))
+# def retain_catch(*arguments):
+#     return _composer.retain_catch(*arguments)
 
-def deserialize(composition):
-    return _composer.deserialize(composition)
+# def repeat(count, *arguments):
+#     return _composer._compose('repeat', (count, *arguments))
 
-def encode(composition, localcombinators=[]):
-    return _composer.encode(composition, localcombinators)
+# def retry(count, *arguments):
+#     return _composer._compose('retry', (count, *arguments))
 
-def lower(composition, combinators = []):
-    return _composer.lower(composition, combinators)
+# def deserialize(composition):
+#     return _composer.deserialize(composition)
 
-def openwhisk(options):
-    return _composer.openwhisk(options)
+# def encode(composition, localcombinators=[]):
+#     return _composer.encode(composition, localcombinators)
+
+# def lower(composition, combinators = []):
+#     return _composer.lower(composition, combinators)
+
+# def openwhisk(options):
+#     return _composer.openwhisk(options)
