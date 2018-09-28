@@ -7,8 +7,7 @@ import base64
 import marshal
 import types
  
-from .composer import __version__ 
-from .fqn import parse_action_name, ComposerError
+from composer import __version__ 
 
 undefined = object() # special undefined value
 composer = types.SimpleNamespace() # Simple object with attributes
@@ -60,7 +59,13 @@ def retry_cond(env, args):
 # lowerer 
 
 lowerer = types.SimpleNamespace()
-lowerer.literal = lambda value: composer.let({ 'value': value }, lambda env, args: env['value'])
+
+Lowerer = lambda f: setattr(lowerer, f.__name__, f)
+
+@Lowerer
+def literal(value):
+    return composer.let({ 'value': value }, lambda env, args: env['value'])
+
 
 def retain(*components):
     return composer.let(
@@ -106,17 +111,17 @@ def loop(test, body):
 
 lowerer.loop = loop
 
-def dowhile(body, test):
+def doloop(body, test):
     return composer.let(
         { 'params': None },
         composer.ensure(
             set_params,
-            composer.seq(composer.dowhile_nosave(
+            composer.seq(composer.doloop_nosave(
                 composer.ensure(get_params, composer.seq(composer.mask(body), set_params)),
                 composer.mask(test)),
             get_params)))
 
-lowerer.dowhile = dowhile
+lowerer.doloop = doloop
 
 def repeat(count, *components):
    return composer.let(
@@ -131,7 +136,7 @@ def retry(count, *components):
     return composer.let(
         { 'count': count },
         set_nested_params,
-        composer.dowhile(
+        composer.doloop(
             composer.ensure(get_nested_params, composer.mask(composer.retain_catch(*components))),
             retry_cond,
         get_nested_result))
@@ -165,15 +170,17 @@ lowerer.merge = merge
 
 def visit(composition, f):
     ''' apply f to all fields of type composition '''
+    composition = composition.copy()
 
-    combinator = getattr(composition, '.combinator')
+    combinator = composition['.combinator']()
     if 'components' in combinator:
-        composition.components = composition.components.map(f)
+        composition['components'] = map(f, composition['components'])
 
     if 'args' in combinator:
         for arg in combinator['args']:
-            if 'type' not in arg and arg.name in composition:
-                setattr(composition, arg.name, f(getattr(composition, arg.name), arg.name))
+            if 'type' not in arg and arg['name'] in composition:
+                composition[arg['name']] = f(composition[arg['name']], arg['name'])
+
     return Composition(composition)
 
 def label(composition):
@@ -219,26 +226,28 @@ def declare(combinators, prefix=None):
             raise ComposerError('Invalid "'+type_+'" combinator specification in "declare"', combinator)
 
         if 'args' in combinator:
-            for arg in combinator.args:
+            for arg in combinator['args']:
                 if not isinstance(arg['name'], str):
                     raise ComposerError('Invalid "'+type_+'" combinator specification in "declare"', combinator)
-       
-        def combine(*arguments):
-            composition = { 'type': type_, '.combinator': lambda : combinator }
-            skip = len(combinator['args']) if 'args' in combinator else 0 
-
-            if 'components' not in combinator and len(arguments) > skip:
-                raise ComposerError('Too many arguments in "'+type_+'" combinator')
-            
-            for i in range(skip):
-                composition[combinator['args'][i]['name']] = arguments[i]
+        
+        # Javascript capturing rules differ from python3 ones. 
+        def capture(combinator=combinator, type_=type_):
+            def combine(*arguments):
+                composition = { 'type': type_, '.combinator': lambda : combinator }
+                skip = len(combinator['args']) if 'args' in combinator else 0 
+                if 'components' not in combinator and len(arguments) > skip:
+                    raise ComposerError('Too many arguments in "'+type_+'" combinator')
                 
-            if 'components' in combinator:
-                composition['components'] = arguments[skip:]
-                
-            return Composition(composition)
+                for i in range(len(arguments)): # safer.
+                    composition[combinator['args'][i]['name']] = arguments[i]
+                    
+                if 'components' in combinator:
+                    composition['components'] = arguments[skip:]
+                    
+                return Composition(composition)
+            return combine
 
-        setattr(composer, key, combine)
+        setattr(composer, key, capture())
  
     return composer
 
@@ -246,11 +255,8 @@ def serialize(obj):
     return obj.__dict__
 
 class Composition:
-
     def __init__(self, composition):
         '''  construct a composition object with the specified fields '''
-        combinator = getattr(composition, '.combinator')()
-        
         # shallow copy of obj attributes
         items = composition.items() if isinstance(composition, dict) else composition.__dict__.items() if isinstance(composition, Composition) else None
         if items is None:
@@ -258,34 +264,36 @@ class Composition:
         for k, v in items:
             setattr(self, k, v)
         
+        combinator = composition['.combinator']()
+        
         if 'args' in combinator:
-            for arg in combinator.args:
-                if arg.name not in composition and optional and 'type' in arg:
+            for arg in combinator['args']:
+                optional = arg.get('optional', False)
+                if arg['name'] not in composition and optional and 'type' in arg:
                     continue
-                optional = getattr(arg, 'optional', False)
                 if 'type' not in arg:
                     try:
-                        value = getattr(composition, arg.name, None if optional else undefined)
-                        setattr(self, arg.name, composer.task(value))
+                        value = composition.get(arg['name'], None if optional else undefined)
+                        setattr(self, arg['name'], composer.task(value))
                     except Exception:
-                        raise ComposerError('Invalid argument "'+arg.name+'" in "'+composition.type+' combinator"', value)
-                elif arg.type == 'name':
+                        raise ComposerError('Invalid argument "'+arg['name']+'" in "'+composition['type']+' combinator"', value)
+                elif arg['type'] == 'name':
                     try:
-                        setattr(self, arg.name, parse_action_name(getattr(composition, arg.name)))
+                        setattr(self, arg['name'], parse_action_name(composition.get(arg['name'])))
                     except ComposerError as ce:
-                        raise ComposerError(ce.message + 'in "'+composition.type+' combinator"', getattr(composition, arg.name))
-                elif arg.type == 'value':
-                    if arg.name not in composition or callable(getattr(composition, arg.name)):
-                        raise ComposerError('Invalid argument "' + arg.name+'" in "'+ composition.type+'combinator"', getattr(composition, arg.name))
-                elif arg.type == 'object':
-                    if arg.name not in composition or not isinstance(getattr(composition, arg.name), Composition):
-                        raise ComposerError('Invalid argument "' + arg.name+'" in "'+ composition.type+'combinator"', getattr(composition, arg.name))
+                        raise ComposerError(ce.message + ' in "'+composition['type']+' combinator"', composition.get(arg['name']))
+                elif arg['type'] == 'value':
+                    if callable(composition.get(arg['name'])) or arg['name'] not in composition:
+                        raise ComposerError('Invalid argument "' + arg['name']+'" in "'+ composition['type']+' combinator"', composition.get(arg['name']))
+                elif arg['type'] == 'object':
+                    if not isinstance(composition.get(arg['name']), dict):
+                        raise ComposerError('Invalid argument "' + arg['name']+'" in "'+ composition['type']+' combinator"', composition.get(arg['name']))
                 else:
-                    if type(getattr(composition, arg.name)) != arg.type: 
-                        raise ComposerError('Invalid argument "' + arg.name+'" in "'+ composition.type+'combinator"', getattr(composition, arg.name))
+                    if type(composition.get(arg['name'])) != arg.type: 
+                        raise ComposerError('Invalid argument "' + arg['name']+'" in "'+ composition['type']+' combinator"', composition.get(arg['name']))
         
         if 'components' in combinator:
-            self.components = map(composer.task, getattr(composition, 'components', []))
+            self.components = map(composer.task, composition.get('components', []))
 
 
     def __str__(self):
@@ -389,6 +397,8 @@ composer.__dict__.update(declare(extra).__dict__)
 
 # add or override definitions of some combinators
 
+Combinator = lambda f: setattr(composer, f.__name__, f)
+
 def task(task):
     ''' detect task type and create corresponding composition object '''
     if task is undefined:
@@ -410,11 +420,10 @@ def task(task):
 
 composer.task = task
 
-
 def function(fun):
     ''' function combinator: stringify def/lambda code '''
 
-    if fun.__name__ == '<lambda>':
+    if hasattr(fun, 'name') and fun.__name__ == '<lambda>':
         exc = str(base64.b64encode(marshal.dumps(fun.__code__)), 'ASCII')
     elif callable(fun):
         try:
@@ -472,3 +481,65 @@ def action(name, options = {}):
         composition.action = exc
 
     return Composition(composition)
+
+composer.action = action
+
+@Combinator
+def parse(composition):
+    ''' recursively deserialize composition '''
+    if not isinstance(composition, dict):
+        raise ComposerError('Invalid argument "composition" in "parse" combinator', composition)
+    
+    combinator = composition['.combinator']() if '.combinator' in composition and callable(composition['.combinator']) else combinators[composition['type']]
+
+    if not isinstance(combinator, dict):
+        raise ComposerError('Invalid composition type in "parse" combinator', composition)
+    
+    extended = { '.combinator': lambda : combinator }
+    extended.update(composition)
+    return visit(extended, lambda composition, _: composer.parse(composition))
+
+composer.action = action
+
+def parse_action_name(name):
+    '''
+      Parses a (possibly fully qualified) resource name and validates it. If it's not a fully qualified name,
+      then attempts to qualify it.
+
+      Examples string to namespace, [package/]action name
+        foo => /_/foo
+        pkg/foo => /_/pkg/foo
+        /ns/foo => /ns/foo
+        /ns/pkg/foo => /ns/pkg/foo
+    '''
+    if not isinstance(name, str):
+        raise ComposerError('Name must be a string')
+    name = name.strip()
+    if len(name) == 0:
+        raise ComposerError('Name is not valid')
+
+    delimiter = '/'
+    parts = name.split(delimiter)
+    n = len(parts)
+    leadingSlash = name[0] == delimiter if len(name) > 0 else False
+    # no more than /ns/p/a
+    if n < 1 or n > 4 or (leadingSlash and n == 2) or (not leadingSlash and n == 4):
+        raise ComposerError('Name is not valid')
+
+    # skip leading slash, all parts must be non empty (could tighten this check to match EntityName regex)
+    for part in parts[1:]:
+        if len(part.strip()) == 0:
+            raise ComposerError('Name is not valid')
+
+    newName = delimiter.join(parts)
+    if leadingSlash:
+        return newName
+    elif n < 3:
+        return delimiter+'_'+delimiter+newName
+    else:
+        return delimiter+newName
+
+class ComposerError(Exception):
+    def __init__(self, message, *arguments):
+       self.message = message
+       self.argument = arguments
