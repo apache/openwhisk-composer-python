@@ -2,8 +2,11 @@ import composer
 import pytest
 
 def check(combinator, n, name=None):
+    # Check combinator type
     assert getattr(composer, combinator)(*['foo' for _ in range(n)]).type == name if name is not None else combinator
-
+ 
+def empty():
+    return {}
 
 class TestAction:
     def test_combinator_type(self): 
@@ -142,7 +145,6 @@ class TestValue:
         except composer.ComposerError as error:
             assert error.message.startswith('Invalid argument')
 
-
 class TestParse:
     
     def test_combinator_type(self):
@@ -155,5 +157,188 @@ class TestParse:
                 'type': 'action',
                 'name': 'echo'
             }]
-        }).type == 'sequence'
+        }).type == 'sequence'   
+
+class TestTask:
+    def test_check(self):
+        check('task', 1, 'action')
+    
+    def test_string(self):
+        composer.task('isNotOne')
+
+    def test_function(self):
+        composer.task(empty)
+    
+    def test_lambda(self):
+        composer.task(lambda : {})
+
+    def test_none(self):
+        composer.task(None)
+
+    def test_boolean_invalid(self):
+        try:
+            composer.task(False)
+            assert False    
+        except composer.ComposerError as error:
+            assert error.message.startswith('Invalid argument')
         
+    def test_dict_invalid(self):
+        try:
+            composer.task({ "foo": 42 })
+            assert False    
+        except composer.ComposerError as error:
+            assert error.message.startswith('Invalid argument')
+
+class TestLet:
+
+    def test_variable_argument_count(self):
+        composer.let({})
+        composer.let({}, 'foo')
+        composer.let({}, 'foo', 'foo')
+
+    def test_combinator_type(self):
+        assert composer.let({}).type == 'let'
+
+class TestRepeat:
+
+     def test_variable_argument_count(self):
+        composer.repeat(42)
+        composer.repeat(42, 'foo')
+        composer.repeat(42, 'foo', 'foo')
+
+     def test_combinator_type(self):
+        assert composer.repeat(42).type == 'repeat'
+
+class TestRetry:
+
+     def test_variable_argument_count(self):
+        composer.retry(42)
+        composer.retry(42, 'foo')
+        composer.retry(42, 'foo', 'foo')
+
+     def test_combinator_type(self):
+        assert composer.retry(42).type == 'retry'
+
+class TestSleep:
+
+     def test_argument_count(self):
+        composer.sleep(42) 
+        
+     def test_combinator_type(self):
+        assert composer.sleep(42).type == 'sleep'
+ 
+class TestInvoke:
+
+     def test_argument_count(self):
+        composer.invoke({}) 
+        composer.invoke({}, 42) 
+        
+     def test_combinator_type(self):
+        assert composer.invoke({}).type == 'invoke'
+
+class TestWhen:
+
+    def test_check(self):
+        check('when', 2)
+
+class TestWhenNoSave:
+
+    def test_check(self):
+        check('when_nosave', 2)
+
+class TestLoop:
+
+    def test_check(self):
+        check('loop', 2)
+
+class TestLoopNoSave:
+
+    def test_check(self):
+        check('loop_nosave', 2)
+
+class TestDoLoop:
+
+    def test_check(self):
+        check('doloop', 2)
+
+class TestDoLoopNoSave:
+
+    def test_check(self):
+        check('doloop_nosave', 2)
+
+class TestDo:
+
+    def test_check(self):
+        check('do', 2)
+
+class TestEnsure:
+
+    def test_check(self):
+        check('ensure', 2)
+
+class TestExec:
+
+    def test_check(self):
+        check('exec', 0)
+
+class TestEmpty:
+
+    def test_check(self):
+        check('empty', 0)
+
+
+class TestMask:
+
+    def test_check(self):
+        check('mask', 0)
+
+
+class TestAsync:
+
+    def test_check(self):
+        check('async', 0)
+
+
+class TestParallel:
+
+    def test_check(self):
+        check('parallel', 0)
+
+class TestPar:
+
+    def test_check(self):
+        check('par', 0)
+
+class TestMap:
+
+    def test_check(self):
+        check('map', 0)
+
+class TestRetain:
+
+    def test_check(self):
+        check('retain', 0)
+
+class TestRetainCatch:
+
+    def test_check(self):
+        check('retain_catch', 0)
+
+class TestSequence:
+
+    def test_check(self):
+        check('sequence', 0)
+
+class TestSeq:
+
+    def test_check(self):
+        check('seq', 0)
+
+class TestMerge:
+
+    def test_check(self):
+        check('merge', 0)
+
+
+
+

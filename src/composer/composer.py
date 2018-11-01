@@ -6,6 +6,7 @@ import re
 import base64
 import marshal
 import types
+import copy
  
 from composer import __version__ 
 
@@ -148,7 +149,7 @@ def prepare_payload(env, args):
     del envs['action']
     return { 'action': env['req']['action'], 'args': envs, 'payload': args['payload'] , 'timeout': envs['timeout'] }
 
-def invoke (req, timeout=None):
+def invoke (req, timeout):
     return composer.let(
       { 'req': req, 'timeout': timeout },
       prepare_payload,
@@ -170,7 +171,7 @@ lowerer.merge = merge
 
 def visit(composition, f):
     ''' apply f to all fields of type composition '''
-    composition = composition.copy()
+    composition = copy.copy(composition if isinstance(composition, dict) else composition.__dict__)
 
     combinator = composition['.combinator']()
     if 'components' in combinator:
@@ -238,7 +239,7 @@ def declare(combinators, prefix=None):
                 if 'components' not in combinator and len(arguments) > skip:
                     raise ComposerError('Too many arguments in "'+type_+'" combinator')
                 
-                for i in range(len(arguments)): # safer.
+                for i in range(skip):  
                     composition[combinator['args'][i]['name']] = arguments[i]
                     
                 if 'components' in combinator:
@@ -288,8 +289,8 @@ class Composition:
                 elif arg['type'] == 'object':
                     if not isinstance(composition.get(arg['name']), dict):
                         raise ComposerError('Invalid argument "' + arg['name']+'" in "'+ composition['type']+' combinator"', composition.get(arg['name']))
-                else:
-                    if type(composition.get(arg['name'])) != arg.type: 
+                else: 
+                    if type(composition.get(arg['name'])).__name__ != arg['type']: 
                         raise ComposerError('Invalid argument "' + arg['name']+'" in "'+ composition['type']+' combinator"', composition.get(arg['name']))
         
         if 'components' in combinator:
@@ -305,9 +306,10 @@ class Composition:
 
         def flatten(composition, _=None):
             composition = visit(composition, flatten)
+            
             if composition.type == 'action' and hasattr(composition, 'action'): # pylint: disable=E1101
                 actions.append({ 'name': composition.name, 'action': composition.action })
-            del composition.action # pylint: disable=E1101
+                del composition.action # pylint: disable=E1101
             return composition
         
         obj = { 'composition': label(flatten(self)).lower(), 'ast': self, 'version': __version__ }
@@ -381,14 +383,14 @@ extra = {
   'if': { 'args': [{ 'name': 'test' }, { 'name': 'consequent' }, { 'name': 'alternate', 'optional': True }], 'since': '0.4.0', 'def': lowerer.when },
   'while': { 'args': [{ 'name': 'test' }, { 'name': 'body' }], 'since': '0.4.0', 'def': lowerer.loop },
   'dowhile': { 'args': [{ 'name': 'body' }, { 'name': 'test' }], 'since': '0.4.0', 'def': lowerer.doloop },
-  'repeat': { 'args': [{ 'name': 'count', 'type': 'number' }], 'components': True, 'since': '0.4.0', 'def': lowerer.repeat },
-  'retry': { 'args': [{ 'name': 'count', 'type': 'number' }], 'components': True, 'since': '0.4.0', 'def': lowerer.retry },
+  'repeat': { 'args': [{ 'name': 'count', 'type': 'int' }], 'components': True, 'since': '0.4.0', 'def': lowerer.repeat },
+  'retry': { 'args': [{ 'name': 'count', 'type': 'int' }], 'components': True, 'since': '0.4.0', 'def': lowerer.retry },
   'retain': { 'components': True, 'since': '0.4.0', 'def': lowerer.retain },
   'retain_catch': { 'components': True, 'since': '0.4.0', 'def': lowerer.retain_catch },
   'value': { 'args': [{ 'name': 'value', 'type': 'value' }], 'since': '0.4.0', 'def': lowerer.literal },
   'literal': { 'args': [{ 'name': 'value', 'type': 'value' }], 'since': '0.4.0', 'def': lowerer.literal },
-  'sleep': { 'args': [{ 'name': 'ms', 'type': 'number' }], 'since': '0.5.0', 'def': lowerer.sleep },
-  'invoke': { 'args': [{ 'name': 'req', 'type': 'object' }, { 'name': 'timeout', 'type': 'number', 'optional': True }], 'since': '0.5.0', 'def': lowerer.invoke },
+  'sleep': { 'args': [{ 'name': 'ms', 'type': 'int' }], 'since': '0.5.0', 'def': lowerer.sleep },
+  'invoke': { 'args': [{ 'name': 'req', 'type': 'object' }, { 'name': 'timeout', 'type': 'int', 'optional': True }], 'since': '0.5.0', 'def': lowerer.invoke },
   'par': { 'components': True, 'since': '0.8.2', 'def': composer.parallel },
   'merge': { 'components': True, 'since': '0.13.0', 'def': lowerer.merge }
 }

@@ -1,7 +1,9 @@
 __version__ = '0.15.1'
 
 from .composer import composer as _composer
-from .composer import ComposerError
+from .composer import ComposerError, serialize, Composition, get_value, get_params, set_params
+from .composer import retain_result, retain_nested_result, dec_count, set_nested_params, get_nested_params
+from .composer import set_nested_result, get_nested_result, retry_cond
 
 # statically export composer combinators to avoid E1101 pylint errors
 
@@ -46,7 +48,7 @@ def loop_nosave(test, body):
     return _composer.loop_nosave(test, body)
 
 def do(body, handler):
-    return _composer._compose('try', (body, handler))
+    return _composer.do(body, handler)
 
 def doloop(body, test):
     return _composer.doloop(body, test)
@@ -55,22 +57,28 @@ def doloop_nosave(body, test):
     return _composer.doloop_nosave(body, test)
 
 def ensure(body, finalizer):
-    return _composer._compose('finally', (body, finalizer))
+    return _composer.ensure(body, finalizer)
 
 def let(declarations, *arguments):
-    return _composer._compose('let', (declarations, *arguments))
+    return _composer.let(declarations, *arguments)
 
 def mask(*arguments):
-    return _composer._compose('mask', arguments)
+    return _composer.mask(*arguments)
 
 def retain(*arguments):
-    return _composer._compose('retain', arguments)
+    return _composer.retain(*arguments)
 
 def retain_catch(*arguments):
     return _composer.retain_catch(*arguments)
 
 def repeat(count, *arguments):
-    return _composer._compose('repeat', (count, *arguments))
+    return _composer.repeat(count, *arguments)
 
 def retry(count, *arguments):
-    return _composer._compose('retry', (count, *arguments))
+    return _composer.retry(count, *arguments)
+
+def sleep(ms):
+    return _composer.sleep(ms)
+
+def invoke(req, timeout=0):
+    return _composer.invoke(req, timeout)
