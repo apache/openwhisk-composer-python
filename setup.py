@@ -26,8 +26,8 @@ setup(
     name='composer',
     version='0.1.0',
     license='Apache Software License 2.0',
-    description='IBM Cloud Functions Composer for Python',
-    long_description='Composer is an IBM Cloud Functions programming model for composing individual functions into larger applications.',
+    description='OpenWhisk Composer for Python',
+    long_description='Composer Python is a new programming model for composing cloud functions built on Apache OpenWhisk.',
     author='Lionel Villard',
     author_email='villard@us.ibm.com',
     url='https://github.com/ibm-functions/composer-python',
@@ -65,11 +65,9 @@ setup(
         'Topic :: Software Development :: Libraries',
     ],
     keywords=[
-        'ibm',
         'functions',
         'serverless',
         'composer',
-        'bluemix',
         'openwhisk',
     ],
     install_requires=['requests']

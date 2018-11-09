@@ -61,13 +61,13 @@ def retry_cond(env, args):
 
 lowerer = types.SimpleNamespace()
 
-Lowerer = lambda f: setattr(lowerer, f.__name__, f)
+loweropt = lambda f: setattr(lowerer, f.__name__, f)
 
-@Lowerer
+@loweropt
 def literal(value):
     return composer.let({ 'value': value }, lambda env, args: env['value'])
 
-
+@loweropt
 def retain(*components):
     return composer.let(
         { 'params': None },
@@ -75,8 +75,7 @@ def retain(*components):
             set_params,
             composer.seq(composer.mask(*components), retain_result)))
 
-lowerer.retain = retain
-
+@loweropt
 def retain_catch(*components):
     return composer.seq(
         composer.retain(
@@ -85,21 +84,19 @@ def retain_catch(*components):
                 lambda env, args: { 'result' : args })),
         retain_nested_result)
 
-lowerer.retain_catch = retain_catch
-
+@loweropt
 def when(test, consequent, alternate):
     return composer.let(
         { 'params': None },
         set_params,
         composer.ensure(
-            lambda env, args: { 'params' : args },
+            set_params,
             composer.when_nosave(
                 composer.mask(test),
                 composer.ensure(get_params, composer.mask(consequent)),
                 composer.ensure(get_params, composer.mask(alternate)))))
 
-lowerer.when = when
-
+@loweropt
 def loop(test, body):
     return composer.let(
         { 'params': None },
@@ -107,11 +104,10 @@ def loop(test, body):
             set_params,
             composer.seq(composer.loop_nosave(
                 composer.mask(test),
-                composer.ensure(get_params, composer.seq(composer.mask(body), set_params)),
-            get_params))))
+                composer.ensure(get_params, composer.seq(composer.mask(body), set_params))),
+            get_params)))
 
-lowerer.loop = loop
-
+@loweropt
 def doloop(body, test):
     return composer.let(
         { 'params': None },
@@ -122,8 +118,7 @@ def doloop(body, test):
                 composer.mask(test)),
             get_params)))
 
-lowerer.doloop = doloop
-
+@loweropt
 def repeat(count, *components):
    return composer.let(
       { 'count': count },
@@ -131,41 +126,19 @@ def repeat(count, *components):
         dec_count,
         composer.mask(*components)))
 
-lowerer.repeat = repeat
-
+@loweropt
 def retry(count, *components):
     return composer.let(
         { 'count': count },
         set_nested_params,
         composer.doloop(
             composer.ensure(get_nested_params, composer.mask(composer.retain_catch(*components))),
-            retry_cond,
-        get_nested_result))
+            retry_cond),
+        get_nested_result)
 
-lowerer.retry = retry
-
-def prepare_payload(env, args):
-    envs = env['req'].copy()
-    del envs['action']
-    return { 'action': env['req']['action'], 'args': envs, 'payload': args['payload'] , 'timeout': envs['timeout'] }
-
-def invoke (req, timeout):
-    return composer.let(
-      { 'req': req, 'timeout': timeout },
-      prepare_payload,
-      composer.execute())
-
-lowerer.invoke = invoke
-
-def sleep(ms):
-    return composer.invoke({ 'action': 'sleep', 'ms': ms })
-
-lowerer.sleep = sleep
-
+@loweropt
 def merge (*components):
     return composer.seq(composer.retain(*components), lambda env, args: args['params'].update(args['result']))
-
-lowerer.merge = merge
 
 # == Done lowerer
 
@@ -175,7 +148,7 @@ def visit(composition, f):
 
     combinator = composition['.combinator']()
     if 'components' in combinator:
-        composition['components'] = map(f, composition['components'])
+        composition['components'] = list(map(lambda v: f(v, None), composition['components']))
 
     if 'args' in combinator:
         for arg in combinator['args']:
@@ -235,7 +208,7 @@ def declare(combinators, prefix=None):
         def capture(combinator=combinator, type_=type_):
             def combine(*arguments):
                 composition = { 'type': type_, '.combinator': lambda : combinator }
-                skip = len(combinator['args']) if 'args' in combinator else 0 
+                skip = len(combinator.get('args', []))
                 if 'components' not in combinator and len(arguments) > skip:
                     raise ComposerError('Too many arguments in "'+type_+'" combinator')
                 
@@ -294,7 +267,7 @@ class Composition:
                         raise ComposerError('Invalid argument "' + arg['name']+'" in "'+ composition['type']+' combinator"', composition.get(arg['name']))
         
         if 'components' in combinator:
-            self.components = map(composer.task, composition.get('components', []))
+            self.components = list(map(composer.task, composition.get('components', [])))
 
 
     def __str__(self):
@@ -325,7 +298,7 @@ class Composition:
         def lower(composition, _):
             # repeatedly lower root combinator
 
-            while getattr(getattr(composition, '.combinator')(), 'def', False):
+            while 'def' in getattr(composition, '.combinator')():
                 path = composition.path if hasattr(composition, 'path') else None
                 combinator = getattr(composition, '.combinator')()
                 if isinstance(combinator, list) and combinator.indexOf(composition.type) >= 0:
@@ -337,14 +310,14 @@ class Composition:
 
                 # map argument names to positions
                 args = []
-                skip = len(getattr(combinator, 'args', []))
+                skip = len(combinator.get('args', []))
                 for i in range(skip): 
-                    args.append(getattr(composition, combinator.args[i].name))
+                    args.append(getattr(composition, combinator['args'][i]['name']))
 
                 if 'components' in combinator:
                     args.extend(composition.components)
 
-                composition = combinator['def'](args)
+                composition = combinator['def'](*args)
 
                 # preserve path
                 if path is not None:
@@ -358,18 +331,22 @@ class Composition:
 # primitive combinators
 combinators = {
   'sequence': { 'components': True, 'since': '0.4.0' },
-  'if_nosave': { 'args': [{ 'name': 'test' }, { 'name': 'consequent' }, { 'name': 'alternate', 'optional': True }], 'since': '0.4.0' },
-  'while_nosave': { 'args': [{ 'name': 'test' }, { 'name': 'body' }], 'since': '0.4.0' },
-  'dowhile_nosave': { 'args': [{ 'name': 'body' }, { 'name': 'test' }], 'since': '0.4.0' },
-  'try': { 'args': [{ 'name': 'body' }, { 'name': 'handler' }], 'since': '0.4.0' },
-  'finally': { 'args': [{ 'name': 'body' }, { 'name': 'finalizer' }], 'since': '0.4.0' },
+  # if_nosave
+  'when_nosave': { 'args': [{ 'name': 'test' }, { 'name': 'consequent' }, { 'name': 'alternate', 'optional': True }], 'since': '0.4.0' },
+  # while_nosave
+  'loop_nosave': { 'args': [{ 'name': 'test' }, { 'name': 'body' }], 'since': '0.4.0' },
+  # dowhile_nosave
+  'doloop_nosave': { 'args': [{ 'name': 'body' }, { 'name': 'test' }], 'since': '0.4.0' },
+  # try
+  'do': { 'args': [{ 'name': 'body' }, { 'name': 'handler' }], 'since': '0.4.0' },
+  # finally
+  'ensure': { 'args': [{ 'name': 'body' }, { 'name': 'finalizer' }], 'since': '0.4.0' },
   'let': { 'args': [{ 'name': 'declarations', 'type': 'object' }], 'components': True, 'since': '0.4.0' },
   'mask': { 'components': True, 'since': '0.4.0' },
   'action': { 'args': [{ 'name': 'name', 'type': 'name' }, { 'name': 'action', 'type': 'object', 'optional': True }], 'since': '0.4.0' },
   'function': { 'args': [{ 'name': 'function', 'type': 'object' }], 'since': '0.4.0' },
-  'async': { 'components': True, 'since': '0.6.0' },
+  'asynchronous': { 'components': True, 'since': '0.6.0' },
   'execute': { 'since': '0.5.2' },
-  'parallel': { 'components': True, 'since': '0.6.0' },
   'map': { 'components': True, 'since': '0.6.0' },
   'composition': { 'args': [{ 'name': 'name', 'type': 'name' }], 'since': '0.6.0' }
 }
@@ -380,18 +357,18 @@ composer.__dict__.update(declare(combinators).__dict__)
 extra = {
   'empty': { 'since': '0.4.0', 'def': composer.sequence },
   'seq': { 'components': True, 'since': '0.4.0', 'def': composer.sequence },
-  'if': { 'args': [{ 'name': 'test' }, { 'name': 'consequent' }, { 'name': 'alternate', 'optional': True }], 'since': '0.4.0', 'def': lowerer.when },
-  'while': { 'args': [{ 'name': 'test' }, { 'name': 'body' }], 'since': '0.4.0', 'def': lowerer.loop },
-  'dowhile': { 'args': [{ 'name': 'body' }, { 'name': 'test' }], 'since': '0.4.0', 'def': lowerer.doloop },
+  # if
+  'when': { 'args': [{ 'name': 'test' }, { 'name': 'consequent' }, { 'name': 'alternate', 'optional': True }], 'since': '0.4.0', 'def': lowerer.when },
+  # while
+  'loop': { 'args': [{ 'name': 'test' }, { 'name': 'body' }], 'since': '0.4.0', 'def': lowerer.loop },
+  # dowhile
+  'doloop': { 'args': [{ 'name': 'body' }, { 'name': 'test' }], 'since': '0.4.0', 'def': lowerer.doloop },
   'repeat': { 'args': [{ 'name': 'count', 'type': 'int' }], 'components': True, 'since': '0.4.0', 'def': lowerer.repeat },
   'retry': { 'args': [{ 'name': 'count', 'type': 'int' }], 'components': True, 'since': '0.4.0', 'def': lowerer.retry },
   'retain': { 'components': True, 'since': '0.4.0', 'def': lowerer.retain },
   'retain_catch': { 'components': True, 'since': '0.4.0', 'def': lowerer.retain_catch },
   'value': { 'args': [{ 'name': 'value', 'type': 'value' }], 'since': '0.4.0', 'def': lowerer.literal },
   'literal': { 'args': [{ 'name': 'value', 'type': 'value' }], 'since': '0.4.0', 'def': lowerer.literal },
-  'sleep': { 'args': [{ 'name': 'ms', 'type': 'int' }], 'since': '0.5.0', 'def': lowerer.sleep },
-  'invoke': { 'args': [{ 'name': 'req', 'type': 'object' }, { 'name': 'timeout', 'type': 'int', 'optional': True }], 'since': '0.5.0', 'def': lowerer.invoke },
-  'par': { 'components': True, 'since': '0.8.2', 'def': composer.parallel },
   'merge': { 'components': True, 'since': '0.13.0', 'def': lowerer.merge }
 }
 
@@ -399,7 +376,7 @@ composer.__dict__.update(declare(extra).__dict__)
 
 # add or override definitions of some combinators
 
-Combinator = lambda f: setattr(composer, f.__name__, f)
+combinator = lambda f: setattr(composer, f.__name__, f)
 
 def task(task):
     ''' detect task type and create corresponding composition object '''
@@ -424,8 +401,7 @@ composer.task = task
 
 def function(fun):
     ''' function combinator: stringify def/lambda code '''
-
-    if hasattr(fun, 'name') and fun.__name__ == '<lambda>':
+    if getattr(fun, '__name__', '') == '<lambda>':
         exc = str(base64.b64encode(marshal.dumps(fun.__code__)), 'ASCII')
     elif callable(fun):
         try:
@@ -486,7 +462,7 @@ def action(name, options = {}):
 
 composer.action = action
 
-@Combinator
+@combinator
 def parse(composition):
     ''' recursively deserialize composition '''
     if not isinstance(composition, dict):

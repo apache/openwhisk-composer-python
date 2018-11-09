@@ -4,6 +4,7 @@ from .composer import composer as _composer
 from .composer import ComposerError, serialize, Composition, get_value, get_params, set_params
 from .composer import retain_result, retain_nested_result, dec_count, set_nested_params, get_nested_params
 from .composer import set_nested_result, get_nested_result, retry_cond
+from .composer import parse_action_name
 
 # statically export composer combinators to avoid E1101 pylint errors
 
@@ -77,8 +78,5 @@ def repeat(count, *arguments):
 def retry(count, *arguments):
     return _composer.retry(count, *arguments)
 
-def sleep(ms):
-    return _composer.sleep(ms)
-
-def invoke(req, timeout=0):
-    return _composer.invoke(req, timeout)
+def asynchronous(*arguments):
+    return _composer.asynchronous(*arguments)

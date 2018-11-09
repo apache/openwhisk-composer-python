@@ -219,23 +219,6 @@ class TestRetry:
      def test_combinator_type(self):
         assert composer.retry(42).type == 'retry'
 
-class TestSleep:
-
-     def test_argument_count(self):
-        composer.sleep(42) 
-        
-     def test_combinator_type(self):
-        assert composer.sleep(42).type == 'sleep'
- 
-class TestInvoke:
-
-     def test_argument_count(self):
-        composer.invoke({}) 
-        composer.invoke({}, 42) 
-        
-     def test_combinator_type(self):
-        assert composer.invoke({}).type == 'invoke'
-
 class TestWhen:
 
     def test_check(self):
@@ -286,28 +269,15 @@ class TestEmpty:
     def test_check(self):
         check('empty', 0)
 
-
 class TestMask:
 
     def test_check(self):
         check('mask', 0)
 
-
 class TestAsync:
 
     def test_check(self):
         check('async', 0)
-
-
-class TestParallel:
-
-    def test_check(self):
-        check('parallel', 0)
-
-class TestPar:
-
-    def test_check(self):
-        check('par', 0)
 
 class TestMap:
 
