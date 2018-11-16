@@ -178,7 +178,6 @@ def label(composition):
 
     return label('')(composition)
 
-
 def declare(combinators, prefix=None):
     ''' 
         derive combinator methods from combinator table 
@@ -304,10 +303,6 @@ class Composition:
                 if isinstance(combinator, list) and combinator.indexOf(composition.type) >= 0:
                     break
                 
-                # no semver in openwhisk python runtime
-                # if isinstance(combinator, str) and getattr(combinator, 'since', False):
-                #     break;    
-
                 # map argument names to positions
                 args = []
                 skip = len(combinator.get('args', []))
@@ -456,7 +451,7 @@ def action(name, options = {}):
     
     composition = { 'type': 'action', 'name': name, '.combinator': lambda: combinators['action']}
     if exc is not None:
-        composition.action = exc
+        composition['action'] = exc
 
     return Composition(composition)
 
