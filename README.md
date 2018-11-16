@@ -49,7 +49,7 @@ $ cd composer-python
 $ pip3 install -e .
 $ pycompose -h
 usage: pycompose composition.py command [flags]
-$ pycompose -h
+$ pydeploy -h
 usage: pydeploy composition composition.json [flags]
 ```
 
