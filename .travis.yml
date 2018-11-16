@@ -13,7 +13,6 @@ addons:
 env:
   global:
     - IGNORE_CERTS=true
-    - REDIS=redis://172.17.0.1:6379
   matrix:
     - TOXENV=check
 matrix:
