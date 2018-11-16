@@ -3,20 +3,14 @@
 import argparse
 import json
 import composer
-# from composer import __version__
 
 def main():
-    parser = argparse.ArgumentParser(description='process compositions', prog='pycompose', usage='%(prog)s composition.py command [flags]')
+    parser = argparse.ArgumentParser(description='comppile compositions', prog='pycompose', usage='%(prog)s composition.py command [flags]')
     parser.add_argument('file', metavar='composition', type=str, help='the composition')
-    parser.add_argument('-v', '--version', action='store_true', help='output the composer version')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s '+ composer.__version__)
     parser.add_argument('--ast', action='store_true', help='output ast')
 
-
     args = parser.parse_args()
-
-    if args.version:
-        print(composer.__version__)
-        return
 
     filename = args.file
     with open(filename, encoding='UTF-8') as f:
@@ -32,12 +26,9 @@ def main():
         composition = composition.compile()
 
         if args.ast:
-            composition = str(composition['ast'])
-        else:
-            composition['ast'] = str(composition['ast'])
-            composition['composition'] = str(composition['composition'])
-
-        print(composition)
+            composition = composition['ast']
+        
+        print(json.dumps(composition, default=composer.serialize, ensure_ascii=True))
     except Exception as err:
         print(err)
         return 

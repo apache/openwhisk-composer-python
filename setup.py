@@ -38,7 +38,8 @@ setup(
     zip_safe=False,
     entry_points = {
         'console_scripts': [
-            'pycompose = composer.__main__:main'
+            'pycompose = pycompose.__main__:main',
+            'pydeploy = pydeploy.__main__:main'
         ]
     },
     classifiers=[

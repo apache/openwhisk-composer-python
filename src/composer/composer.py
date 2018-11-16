@@ -437,7 +437,12 @@ def action(name, options = {}):
     
     elif 'action' in options and callable(options['action']):
         if options['action'].__name__ == '<lambda>':
-            exc = str(base64.b64encode(marshal.dumps(options['action'].__code__)), 'ASCII')
+            l = str(base64.b64encode(marshal.dumps(options['action'].__code__)), 'ASCII')
+            exc = '''import types\nimport marshal\nimport base64
+__code__= types.FunctionType(marshal.loads(base64.b64decode(bytearray(\''''+ l +'''\', 'ASCII'))), {})
+def main(args):
+    return __code__(args)
+'''
         else:    
             try:
                 exc = inspect.getsource(options['action'])
@@ -451,7 +456,7 @@ def action(name, options = {}):
     
     composition = { 'type': 'action', 'name': name, '.combinator': lambda: combinators['action']}
     if exc is not None:
-        composition['action'] = exc
+        composition['action'] = { 'exec': exc }
 
     return Composition(composition)
 

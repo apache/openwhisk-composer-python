@@ -9,8 +9,6 @@ include *.md
 include samples/demo.py
 include LICENSE.txt
 include README.md
-include CLA-CORPORATE.md
-include CLA-INDIVIDUAL.md
 
 include tox.ini .travis.yml
 include travis/*.sh
