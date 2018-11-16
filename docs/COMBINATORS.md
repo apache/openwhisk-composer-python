@@ -1,3 +1,22 @@
+<!--
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+-->
+
 # Combinators
 
 The `composer` module offers a number of combinators to define compositions:
@@ -5,23 +24,29 @@ The `composer` module offers a number of combinators to define compositions:
 | Combinator | Description | Example |
 | --:| --- | --- |
 | [`action`](#action) | action | `composer.action('echo')` |
-| [`function`](#function) | function | B/A |
-| [`literal` or `value`](#literal) | constant value | `composer.literal({ 'message': 'Hello, World!' })` |
-| [`composition`](#composition) | named composition | `composer.composition('myCompositionName', myComposition)` |
-| [`empty`](#empty) | empty sequence | `composer.empty()`
-| [`sequence` or `seq`](#sequence) | sequence | `composer.sequence('hello', 'bye')` |
-| [`let`](#let) | variable declarations | `composer.let({ 'count': 3, 'message': 'hello' }, ...)` |
-| [`mask`](#mask) | variable hiding | `composer.let({ n }, composer.while(_ => n-- > 0, composer.mask(composition)))` |
-| [`when` and `when_nosave`](#when) | conditional | `composer.when('authenticate', 'success', 'failure')` |
-| [`loop` and `loop_nosave`](#loop) | loop | `composer.loop('notEnough', 'doMore')` |
+| [`asynchronous`](#async) | asynchronous invocation | `composer.asynchronous('compress', 'upload')` |
 | [`doloop` and `doloop_nosave`](#doloop) | loop at least once | `composer.doloop('fetchData', 'needMoreData')` |
-| [`repeat`](#repeat) | counted loop | `composer.repeat(3, 'hello')` |
-| [`do`](#do) | error handling | `composer.do('divideByN', 'NaN')` |
+| [`empty`](#empty) | empty sequence | `composer.empty()` |
 | [`ensure`](#ensure) | finalization | `composer.ensure('tryThis', 'doThatAlways')` |
-| [`retry`](#retry) | error recovery | `composer.retry(3, 'connect')` |
+| [`function`](#function) | function | `composer.function(lambda env, args: { 'product': {args['x'] * args['y'] })` |
+| [`when` and `when_nosave`](#when) | conditional | `composer.when('authenticate', 'success', 'failure')` |
+| [`let`](#let) | variable declarations | `composer.let({ 'count': 3, 'message': 'hello' }, ...)` |
+| [`literal` or `value`](#literal) | constant value | `composer.literal({ 'message': 'Hello, World!' })` |
+| [`mask`](#mask) | variable hiding | `composer.let({ n }, composer.loop(lambda env, _: env['n']-- > 0, composer.mask(composition)))` |
+| [`merge`](#merge) | data augmentation | `composer.merge('hash')` |
+| [`repeat`](#repeat) | counted loop | `composer.repeat(3, 'hello')` |
 | [`retain` and `retain_catch`](#retain) | persistence | `composer.retain('validateInput')` |
+| [`retry`](#retry) | error recovery | `composer.retry(3, 'connect')` |
+| [`sequence` or `seq`](#sequence) | sequence | `composer.sequence('hello', 'bye')` |
+| [`task`](#task) | single task | `composer.task('echo')` |
+| [`do`](#do) | error handling | `composer.do('divideByN', 'NaN')` |
+| [`loop` and `loop_nosave`](#loop) | loop | `composer.loop('notEnough', 'doMore')` |
 
-The `action`, `function`, and `literal` combinators construct compositions respectively from actions, functions, and constant values. The other combinators combine existing compositions to produce new compositions.
+
+
+The `action`, `function`, and `literal` combinators construct compositions
+respectively from OpenWhisk actions, Python functions and lambdas, and constant values.
+The other combinators combine existing compositions to produce new compositions.
 
 ## Shorthands
 
@@ -29,10 +54,6 @@ Where a composition is expected, the following shorthands are permitted:
  - `name` of type `string` stands for `composer.action(name)`,
  - `fun` of type `function` stands for `composer.function(fun)`,
  - `None` stands for the empty sequence `composer.empty()`.
-
-## Primitive combinators
-
-Some of these combinators are _derived_ combinators: they are equivalent to combinations of other combinators. The `composer` module offers a `composer.lower` method (see [COMPOSER.md](#COMPOSER.md)) that can eliminate derived combinators from a composition, producing an equivalent composition made only of _primitive_ combinators. The primitive combinators are: `action`, `function`, `composition`, `sequence`, `let`, `mask`, `if_nosave`, `loop_nosave`, `doloop_nosave`, `do`, and `ensure`.
 
 ## Action
 
@@ -51,7 +72,7 @@ The optional `options` dictionary makes it possible to provide a definition for 
 
 # specify the code for the action as a function reference
 def hello(env, args):
-    return { message: 'hello' }
+    return { 'message': 'hello' }
 
 composer.action('hello', { 'action': hello })
 
@@ -178,39 +199,60 @@ In this example, the variable `n` is exposed to the invoked action as a field of
 
 ## Mask
 
-`composer.mask(composition)` is meant to be used in combination with the `let` combinator. It makes it possible to hide the innermost enclosing `let` combinator from _composition_. It is typically used to define composition templates that need to introduce variables.
+`composer.mask(composition_1, composition_2, ..)` is meant to be used in combination with the `let` combinator. It makes it possible to hide the innermost enclosing `let` combinator from _composition_. It is typically used to define composition templates that need to introduce variables.
 
 For instance, the following function is a possible implementation of a repeat loop:
 ```python
-function loop(n, composition) {
-    return .let({ n }, composer.while(() => n-- > 0, composer.mask(composition)))
+def dec_n_positive(env, params):
+    env['n'] -= 1
+    return env['n'] > 0
+
+def loop(n, composition) {
+    return composer.let({ 'n': n }, composer.loop(dec_n_positive, composer.mask(composition)))
 }
 ```
-This function takes two parameters: the number of iterations _n_ and the _composition_ to repeat _n_ times. Here, the `mask` combinator makes sure that this declaration of _n_ is not visible to _composition_. Thanks to `mask`, the following example correctly returns `{ value: 12 }`.
-```javascript
-composer.let({ n: 0 }, loop(3, loop(4, () => ++n)))
+This function takes two parameters: the number of iterations _n_ and the
+_composition_ to repeat _n_ times. Here, the `mask` combinator makes sure that
+this declaration of _n_ is not visible to _composition_. Thanks to `mask`, the
+following example correctly returns `{ value: 12 }`.
+
+```python
+def inc_n(env, params):
+    env['n'] += 1
+
+composer.let({ n: 0 }, loop(3, loop(4, inc_n)))
 ```
 While composer variables are dynamically scoped, the `mask` combinator alleviates the biggest concern with dynamic scoping: incidental name collision.
 
-## If
+## When
 
-`composer.if(condition, consequent, [alternate])` runs either the _consequent_ composition if the _condition_ evaluates to true or the _alternate_ composition if not.
+`composer.when(condition, consequent, [alternate])` runs either the _consequent_ composition if the _condition_ evaluates to true or the _alternate_ composition if not.
 
-A _condition_ composition evaluates to true if and only if it produces a JSON dictionary with a field `value` with value `true`. Other fields are ignored. Because JSON values other than dictionaries are implicitly lifted to dictionaries with a `value` field, _condition_ may be a Javascript function returning a Boolean value. An expression such as `params.n > 0` is not a valid condition (or in general a valid composition). One should write instead `params => params.n > 0`. The input parameter object for the composition is the input parameter object for the _condition_ composition.
+A _condition_ composition evaluates to true if and only if it produces a JSON dictionary with a field `value` with value `true`. Other fields are ignored. Because JSON values other than dictionaries are implicitly lifted to dictionaries with a `value` field, _condition_ may be a Python function returning a Boolean value. An expression such as `params.n > 0` is not a valid condition (or in general a valid composition). One should write instead `params => params.n > 0`. The input parameter object for the composition is the input parameter object for the _condition_ composition.
 
 The _alternate_ composition may be omitted. If _condition_ fails, neither branch is executed.
 
 The output parameter object of the _condition_ composition is discarded, one the choice of a branch has been made and the _consequent_ composition or _alternate_ composition is invoked on the input parameter object for the composition. For example, the following composition divides parameter `n` by two if `n` is even:
-```javascript
-composer.if(params => params.n % 2 === 0, params => { params.n /= 2 })
+```python
+def divide_2(env, params):
+    env['n'] /= 2
+
+composer.when(lambda env, params: env['n'] % 2 == 0, divide_2)
 ```
-The `if_nosave` combinator is similar but it does not preserve the input parameter object, i.e., the _consequent_ composition or _alternate_ composition is invoked on the output parameter object of _condition_. The following example also divides parameter `n` by two if `n` is even:
-```javascript
-composer.if_nosave(params => { params.value = params.n % 2 === 0 }, params => { params.n /= 2 })
+The `when_nosave` combinator is similar but it does not preserve the input parameter object, i.e., the _consequent_ composition or _alternate_ composition is invoked on the output parameter object of _condition_. The following example also divides parameter `n` by two if `n` is even:
+```python
+def divide_2(env, params):
+    env['n'] /= 2
+
+def assign_value(env, params):
+    params['value'] = env['n'] % 2 == 0
+
+
+composer.when_nosave(assign_value, divide_2)
 ```
 In the first example, the condition function simply returns a Boolean value. The consequent function uses the saved input parameter object to compute `n`'s value. In the second example, the condition function adds a `value` field to the input parameter object. The consequent function applies to the resulting object. In particular, in the second example, the output parameter object for the condition includes the `value` field.
 
-While, the `if` combinator is typically more convenient, preserving the input parameter object is not free as it counts toward the parameter size limit for OpenWhisk actions. In essence, the limit on the size of parameter objects processed during the evaluation of the condition is reduced by the size of the saved parameter object. The `if_nosave` combinator omits the parameter save, hence preserving the parameter size limit.
+While, the `when` combinator is typically more convenient, preserving the input parameter object is not free as it counts toward the parameter size limit for OpenWhisk actions. In essence, the limit on the size of parameter objects processed during the evaluation of the condition is reduced by the size of the saved parameter object. The `when_nosave` combinator omits the parameter save, hence preserving the parameter size limit.
 
 ## Loop
 
@@ -260,3 +302,26 @@ The _finalizer_ is invoked in sequence after _body_ even if _body_ returns an er
 `composer.retain(body)` runs _body_ on the input parameter object producing an object with two fields `params` and `result` such that `params` is the input parameter object of the composition and `result` is the output parameter object of _body_.
 
 If _body_ fails, the output of the `retain` combinator is only the error object (i.e., the input parameter object is not preserved). In constrast, the `retain_catch` combinator always outputs `{ params, result }`, even if `result` is an error result.
+
+
+## Merge
+
+`composer.merge(composition_1, composition_2, ...)` runs a sequence of
+compositions on the input parameter object and merge the output parameter object
+of the sequence into the input parameter object. In other words,
+`composer.merge(composition_1, composition_2, ...)` is a shorthand for:
+
+```python
+def extends(dict1, dict2):
+    dict1.extends(dict2)
+    return dict1
+
+composer.seq(composer.retain(composition_1, composition_2, ...), lambda _, args: extends(args['params'], args['result']))
+```
+
+## Asynchronous
+
+`composer.asynchronous(composition_1, composition_2, ...)` runs a sequence of
+compositions asynchronously. It invokes the sequence but does not wait for it to
+execute. It immediately returns a dictionary that includes a field named
+`activationId` with the activation id for the sequence invocation.

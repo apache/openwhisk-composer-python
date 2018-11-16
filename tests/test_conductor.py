@@ -25,7 +25,6 @@ def invoke(composition, params = {}, blocking = True):
        wsk.compositions.deploy(extended, True)
        return wsk.actions.invoke({ 'name': name, 'params': params, 'blocking': blocking })
    except Exception as err:
-       print(err.error)
        raise err
 
 @pytest.fixture(scope="session", autouse=True)

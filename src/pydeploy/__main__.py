@@ -25,8 +25,8 @@ def keyValueFromFile(a):
 
 def main():
     parser = argparse.ArgumentParser(description='deploy composition', prog='pydeploy', usage='%(prog)s composition composition.json [flags]')
-    parser.add_argument('name', metavar='composition', type=str, help='the composition')
-    parser.add_argument('file', metavar='composition', type=str, help='the composition')
+    parser.add_argument('name', metavar='composition', type=str, help='composition name')
+    parser.add_argument('file', metavar='composition', type=str, help='composition')
     parser.add_argument('--apihost', action='store', metavar='HOST', help='API HOST')
     parser.add_argument('-i', '--insecure', action='store_true', help='bypass certificate checking')
     parser.add_argument('-u', '--auth', metavar='KEY', help='authorization KEY')

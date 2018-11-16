@@ -80,3 +80,6 @@ def retry(count, *arguments):
 
 def asynchronous(*arguments):
     return _composer.asynchronous(*arguments)
+
+def merge(*arguments):
+    return _composer.merge(*arguments)
