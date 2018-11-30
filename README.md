@@ -18,7 +18,7 @@
 -->
 # ibm-functions-composer
 
-[![Build Status](https://travis-ci.org/lionelvillard/incubator-openwhisk-composer-python.svg?branch=master)](https://travis-ci.org/lionelvillard/incubator-openwhisk-composer-python)
+[![Build Status](https://travis-ci.org/ibm-functions/composer-python.svg?branch=master)](https://travis-ci.org/ibm-functions/composer-python)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Join
 Slack](https://img.shields.io/badge/join-slack-9B69A0.svg)](http://slack.openwhisk.org/)
@@ -32,7 +32,7 @@ it for IoT, with workflow orchestration, conversation services, and devops
 automation, to name a few examples.
 
 This repository includes:
-* the [composer](docs/COMPOSER.md) Python library for authoring compositions using Python,
+* the [composer](src/composer/composer.py) Python library for authoring compositions using Python,
 * the [pycompose](src/pycompose/__main__.py) and [pydeploy](src/pydeploy/__main__.py)
   [commands](docs/COMMANDS.md) for compiling and deploying compositions,
 * [documentation](docs), [examples](samples), and [tests](tests).
@@ -44,7 +44,7 @@ You need python3.6 installed on your system.
 ### From github
 
 ```bash
-$ git clone git@github.ibm.com:villard/composer-python.git
+$ git clone https://github.com/ibm-functions/composer-python.git
 $ cd composer-python
 $ pip3 install -e .
 $ pycompose -h
