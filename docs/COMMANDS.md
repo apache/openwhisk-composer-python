@@ -41,7 +41,7 @@ Flags:
   --ast                  only output the ast for the composition
   -v, --version          output the composer version
 ```
-The `pycompose` command takes a Python script that defines `main()` returning a 
+The `pycompose` command takes a Python script that defines `main()` returning a
 composition object (for example [demo.py](../samples/demo.py)) and compiles this object to a
 portable JSON format on the standard output.
 ```

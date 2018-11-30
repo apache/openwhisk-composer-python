@@ -1,17 +1,34 @@
+"""
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+"""
+
 import composer
 import pytest
 
 def check(combinator, n, name=None):
     # Check combinator type
     assert getattr(composer, combinator)(*['foo' for _ in range(n)]).type == name if name is not None else combinator
- 
+
 def empty():
     return {}
 
 class TestAction:
-    def test_combinator_type(self): 
+    def test_combinator_type(self):
        assert getattr(composer.action('foo'), 'type') == 'action'
-    
+
     def test_valid_and_invalid_names(self):
         combos = [
             { "n": 42, "s": False, "e": "Name must be a string" },
@@ -51,7 +68,7 @@ class TestAction:
             assert error.message.startswith('Invalid argument')
 
 class TestComposition:
-    def test_combinator_type(self): 
+    def test_combinator_type(self):
        assert getattr(composer.composition('foo'), 'type') == 'composition'
 
     def test_valid_and_invalid_names(self):
@@ -88,7 +105,7 @@ class TestComposition:
 class TestFunction:
     def test_check(self):
         check('function', 1)
-    
+
     def test_function(self):
         composer.function(lambda : {})
 
@@ -104,19 +121,19 @@ class TestFunction:
 class TestLiteral:
     def test_check(self):
         check('literal', 1)
-    
+
     def test_boolean(self):
         composer.literal(True)
 
     def test_number(self):
         composer.literal(42)
-        
+
     def test_string(self):
         composer.literal('foo')
 
     def test_dict(self):
         composer.literal({ 'foo':42 })
-    
+
     def test_function_invalid(self):
         try:
             composer.literal(lambda : {})
@@ -126,19 +143,19 @@ class TestLiteral:
 class TestValue:
     def test_check(self):
         check('value', 1)
-    
+
     def test_boolean(self):
         composer.value(True)
 
     def test_number(self):
         composer.value(42)
-        
+
     def test_string(self):
         composer.value('foo')
 
     def test_dict(self):
         composer.value({ 'foo':42 })
-    
+
     def test_function_invalid(self):
         try:
             composer.value(lambda : {})
@@ -146,7 +163,7 @@ class TestValue:
             assert error.message.startswith('Invalid argument')
 
 class TestParse:
-    
+
     def test_combinator_type(self):
         composer.parse({
             'type': 'sequence',
@@ -157,18 +174,18 @@ class TestParse:
                 'type': 'action',
                 'name': 'echo'
             }]
-        }).type == 'sequence'   
+        }).type == 'sequence'
 
 class TestTask:
     def test_check(self):
         check('task', 1, 'action')
-    
+
     def test_string(self):
         composer.task('isNotOne')
 
     def test_function(self):
         composer.task(empty)
-    
+
     def test_lambda(self):
         composer.task(lambda : {})
 
@@ -178,14 +195,14 @@ class TestTask:
     def test_boolean_invalid(self):
         try:
             composer.task(False)
-            assert False    
+            assert False
         except composer.ComposerError as error:
             assert error.message.startswith('Invalid argument')
-        
+
     def test_dict_invalid(self):
         try:
             composer.task({ "foo": 42 })
-            assert False    
+            assert False
         except composer.ComposerError as error:
             assert error.message.startswith('Invalid argument')
 

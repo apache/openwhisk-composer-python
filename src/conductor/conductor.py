@@ -1,20 +1,24 @@
-# Copyright 2018 IBM Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+"""
+
 import functools
 import json
 import marshal
-import base64 
+import base64
 import types
 import os
 import inspect
@@ -61,16 +65,16 @@ def synthesize(composition): # dict
     code += '\n    return conductor(composition)(args)'
 
     annotations = [
-        { 'key': 'conductor', 'value': str(composition['ast']) }, 
+        { 'key': 'conductor', 'value': str(composition['ast']) },
         { 'key': 'composerVersion', 'value': composition['version'] },
         { 'key': 'conductorVersion', 'value': __version__ }
     ]
-  
+
     return { 'name': composition['name'], 'action': { 'exec': { 'kind': 'python:3', 'code':code }, 'annotations': annotations } }
 
 def openwhisk(options):
     ''' return enhanced openwhisk client capable of deploying compositions '''
-    
+
     # try to extract apihost and key first from whisk property file file and then from os.environ
     try:
         wskpropsPath = os.environ['WSK_CONFIG_FILE'] if 'WSK_CONFIG_FILE' in os.environ else os.path.expanduser('~/.wskprops')
@@ -100,7 +104,7 @@ def openwhisk(options):
         wsk = openwhisk.Client(options)
     except:
         wsk = Client(options)
-    
+
     wsk.compositions = Compositions(wsk)
     return wsk
 
@@ -108,11 +112,11 @@ class Compositions:
     ''' management class for compositions '''
     def __init__(self, wsk):
         self.actions = wsk.actions
-       
+
     def deploy(self, composition, overwrite):
         actions = composition.get('actions', [])
         actions.append(synthesize(composition))
-        
+
         for action in actions:
             if overwrite:
                 try:
@@ -120,13 +124,13 @@ class Compositions:
                 except Exception:
                     pass
             self.actions.create(action)
-            
+
         return actions
 
 def conductor(composition): # main.
     wsk = None
     isObject = lambda x: isinstance(x, dict)
-    
+
     # compile AST to FSM
     compiler = {}
     astnode = lambda f: compiler.setdefault(f.__name__[1:], f)
@@ -162,12 +166,12 @@ def conductor(composition): # main.
     def _let(parent, node):
         body = compile(parent, *node['components'])
         return [{'parent': parent, 'type': 'let', 'let': node['declarations']}, *body, { 'parent': parent, 'type': 'exit' }]
-    
+
     @astnode
     def _mask(parent, node):
         body = compile(parent, *node['components'])
         return [{'parent': parent, 'type': 'let', 'let': None}, *body, { 'parent': parent, 'type': 'exit' }]
-    
+
     @astnode
     def _do(parent, node):
         handler = [ *compile(parent, node['handler']), {'parent': parent, 'type': 'pass'}]
@@ -176,15 +180,15 @@ def conductor(composition): # main.
         fsm[0]['catch'] = len(fsm) - len(handler)
         fsm[len(fsm) - len(handler) - 1]['next'] = len(handler)
         return fsm
-    
+
     @astnode
     def _when_nosave(parent, node):
         consequent = compile(parent, node['consequent'])
         alternate = [ *compile(parent, node['alternate']), { parent: 'parent', 'type': 'pass' }]
-        fsm = [{ 'parent': parent, 'type': 'pass' }, 
-            *compile(parent, node['test']), 
+        fsm = [{ 'parent': parent, 'type': 'pass' },
+            *compile(parent, node['test']),
             { 'parent': parent, 'type': 'choice', 'then': 1, 'else': len(consequent) + 1 },
-            *consequent, 
+            *consequent,
             *alternate]
         fsm[len(fsm) - len(alternate) - 1]['next'] = len(alternate)
         return fsm
@@ -193,19 +197,19 @@ def conductor(composition): # main.
     def _loop_nosave(parent, node):
         body = compile(parent, node['body'])
         test = compile(parent, node['test'])
-        fsm = [{ 'parent': parent, 'type': 'pass' }, *test, 
+        fsm = [{ 'parent': parent, 'type': 'pass' }, *test,
             { 'parent': parent, 'type': 'choice', 'then': 1, 'else': len(body) + 1 },
             *body, { parent: 'parent', 'type': 'pass' }]
-        fsm[len(fsm) - 2]['next'] = 2 - len(fsm) 
+        fsm[len(fsm) - 2]['next'] = 2 - len(fsm)
         return fsm
-    
+
     @astnode
     def _doloop_nosave(parent, node):
         body = compile(parent, node['body'])
         test = compile(parent, node['test'])
         fsm = [{ 'parent': parent, 'type': 'pass' }, *body, *test,
                { 'parent': parent, 'type': 'choice', 'else': 1}, { parent: 'parent', 'type': 'pass' }]
-        fsm[len(fsm) - 2]['then'] = 2 - len(fsm) 
+        fsm[len(fsm) - 2]['then'] = 2 - len(fsm)
         return fsm
 
     def compile(parent, *node):
@@ -215,22 +219,22 @@ def conductor(composition): # main.
         if len(node) == 1:
             return compiler[node[0]['type']](node[0]['path'] if 'path' in node[0] else parent, node[0])
         return functools.reduce(lambda fsm, node: extends(fsm, compile(parent, node)), node, [])
-            
+
 
     def extends(l, items):
         l.extend(items)
         return l
 
     fsm = compile('', composition)
-    
+
     conductor = {}
     operator = lambda f: conductor.setdefault(f.__name__[1:], f)
-    
+
     @operator
     def _choice(p, node, index, inspect, step):
         p['s']['state'] = index + (node['then'] if p['params']['value'] else node['else'])
         return None
-        
+
     @operator
     def _try(p, node, index, inspect, step):
         p['s']['stack'].insert(0, { 'catch': index + node['catch'] })
@@ -238,7 +242,7 @@ def conductor(composition): # main.
     @operator
     def _let(p, node, index, inspect, step):
         p['s']['stack'].insert(0, { 'let': node['let'] }) # JSON.parse(JSON.stringify(jsonv.let))
-    
+
     @operator
     def _exit(p, node, index, inspect, step):
         if len(p['s']['stack']) == 0:
@@ -285,15 +289,15 @@ def conductor(composition): # main.
         try:
             response = wsk.actions.invoke({ 'name': os.getenv('__OW_ACTION_NAME'), 'params': p['params'] })
             result = { 'method': 'async', 'activationId': response['activationId'], 'sessionId': p['s']['session'] }
-            
+
         except Exception as err:
             print(err) # invoke failed
             result = { 'error': 'Async combinator failed to invoke composition at AST node root'+node['parent']+' (see log for details)' }
-    
+
         p['params'] = result
-        inspect_errors(p)  
+        inspect_errors(p)
         return step(p)
-        
+
     def finish(q):
         return q['params'] if 'error' in q['params'] else { 'params': q['params'] }
 
@@ -326,7 +330,7 @@ def conductor(composition): # main.
                     p['s']['state'] = first['catch']
                     if p['s']['state'] >= 0:
                         break
- 
+
     def reduceRight(func, init, seq):
         if not seq:
             return init
@@ -389,38 +393,38 @@ def conductor(composition): # main.
         p['s']['state'] = p['s']['state'] + node.get('next', 1)
         if not callable(conductor[node['type']]):
             return internalError('unexpected '+node['type']+' combinator')
-        
+
         result = conductor[node['type']](p, node, index, inspect, step)
         return result if result is not None else step(p)
 
-    
+
     def invoke(params):
         ''' do invocation '''
         resume = params.get('$resume', {})
         if '$resume' in params:
             del params['$resume']
         resume['session'] = resume.get('session', os.getenv('__OW_ACTIVATION_ID'))
-        
+
         # current state
         s = { 'state': 0, 'stack': [], 'resuming': True }
         s.update(resume)
         p = { 's': s, 'params': params }
-        
+
         if not isinstance(p['s']['state'], int):
             return internalError('state parameter is not a number')
         if not isinstance(p['s']['stack'], list):
             return internalError('stack parameter is not an array')
-        
+
         if 'resuming' in resume:
             inspect_errors(p) # handle error objects when resuming
 
         result = None
-        try: 
+        try:
             result = step(p)
         except Exception as err:
             p['params'] = {'error': internalError(err)}
 
         return result if result is not None else finish(p)
-        
-    return invoke        
+
+    return invoke
 

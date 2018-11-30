@@ -1,3 +1,20 @@
+"""
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+"""
+
 import json
 import os
 import sys
@@ -7,8 +24,8 @@ import base64
 import marshal
 import types
 import copy
- 
-from composer import __version__ 
+
+from composer import __version__
 
 undefined = object() # special undefined value
 composer = types.SimpleNamespace() # Simple object with attributes
@@ -57,7 +74,7 @@ def retry_cond(env, args):
     env['count'] -= 1
     return 'error' in result and count > 0
 
-# lowerer 
+# lowerer
 
 lowerer = types.SimpleNamespace()
 
@@ -179,14 +196,14 @@ def label(composition):
     return label('')(composition)
 
 def declare(combinators, prefix=None):
-    ''' 
-        derive combinator methods from combinator table 
+    '''
+        derive combinator methods from combinator table
         check argument count and map argument positions to argument names
         delegate to Composition constructor for the rest of the validation
     '''
     if not isinstance(combinators, dict):
         raise ComposerError('Invalid argument "combinators" in "declare"', combinators)
-    
+
     if prefix is not None and not isinstance(prefix, str):
         raise ComposerError('Invalid argument "prefix" in "declare"', prefix)
 
@@ -202,26 +219,26 @@ def declare(combinators, prefix=None):
             for arg in combinator['args']:
                 if not isinstance(arg['name'], str):
                     raise ComposerError('Invalid "'+type_+'" combinator specification in "declare"', combinator)
-        
-        # Javascript capturing rules differ from python3 ones. 
+
+        # Javascript capturing rules differ from python3 ones.
         def capture(combinator=combinator, type_=type_):
             def combine(*arguments):
                 composition = { 'type': type_, '.combinator': lambda : combinator }
                 skip = len(combinator.get('args', []))
                 if 'components' not in combinator and len(arguments) > skip:
                     raise ComposerError('Too many arguments in "'+type_+'" combinator')
-                
-                for i in range(skip):  
+
+                for i in range(skip):
                     composition[combinator['args'][i]['name']] = arguments[i]
-                    
+
                 if 'components' in combinator:
                     composition['components'] = arguments[skip:]
-                    
+
                 return Composition(composition)
             return combine
 
         setattr(composer, key, capture())
- 
+
     return composer
 
 def serialize(obj):
@@ -236,9 +253,9 @@ class Composition:
             raise ComposerError('Invalid argument', composition)
         for k, v in items:
             setattr(self, k, v)
-        
+
         combinator = composition['.combinator']()
-        
+
         if 'args' in combinator:
             for arg in combinator['args']:
                 optional = arg.get('optional', False)
@@ -261,10 +278,10 @@ class Composition:
                 elif arg['type'] == 'object':
                     if not isinstance(composition.get(arg['name']), dict):
                         raise ComposerError('Invalid argument "' + arg['name']+'" in "'+ composition['type']+' combinator"', composition.get(arg['name']))
-                else: 
-                    if type(composition.get(arg['name'])).__name__ != arg['type']: 
+                else:
+                    if type(composition.get(arg['name'])).__name__ != arg['type']:
                         raise ComposerError('Invalid argument "' + arg['name']+'" in "'+ composition['type']+' combinator"', composition.get(arg['name']))
-        
+
         if 'components' in combinator:
             self.components = list(map(composer.task, composition.get('components', [])))
 
@@ -278,17 +295,17 @@ class Composition:
 
         def flatten(composition, _=None):
             composition = visit(composition, flatten)
-            
+
             if composition.type == 'action' and hasattr(composition, 'action'): # pylint: disable=E1101
                 actions.append({ 'name': composition.name, 'action': composition.action })
                 del composition.action # pylint: disable=E1101
             return composition
-        
+
         obj = { 'composition': label(flatten(self)).lower(), 'ast': self, 'version': __version__ }
         if len(actions) > 0:
             obj['actions'] = actions
         return obj
-     
+
     def lower(self, combinators = []):
         ''' recursively lower combinators to the desired set of combinators (including primitive combinators) '''
         if not isinstance(combinators, list) and not isinstance(combinators, str):
@@ -302,11 +319,11 @@ class Composition:
                 combinator = getattr(composition, '.combinator')()
                 if isinstance(combinator, list) and combinator.indexOf(composition.type) >= 0:
                     break
-                
+
                 # map argument names to positions
                 args = []
                 skip = len(combinator.get('args', []))
-                for i in range(skip): 
+                for i in range(skip):
                     args.append(getattr(composition, combinator['args'][i]['name']))
 
                 if 'components' in combinator:
@@ -317,11 +334,11 @@ class Composition:
                 # preserve path
                 if path is not None:
                     composition.path = path
-            
+
             return visit(composition, lower)
-                
+
         return lower(self, None)
- 
+
 
 # primitive combinators
 combinators = {
@@ -379,7 +396,7 @@ def task(task):
         raise ComposerError('Invalid argument in "task" combinator', task)
 
     if task is None:
-        return composer.empty() 
+        return composer.empty()
 
     if isinstance(task, Composition):
         return task
@@ -414,7 +431,7 @@ def function(fun):
             functionName = match.group(1)
 
             exc = { 'kind': 'python:3', 'code': exc, 'functionName': functionName }
-        else: # lambda 
+        else: # lambda
             exc = { 'kind': 'python:3+lambda', 'code': exc }
 
     if not isinstance(exc, dict) or exc is None:
@@ -434,7 +451,7 @@ def action(name, options = {}):
     elif 'filename' in options and isinstance(options['filename'], str): # read action code from file
         raise ComposerError('read from file not implemented')
         # exc = fs.readFileSync(options.filename, { encoding: 'utf8' })
-    
+
     elif 'action' in options and callable(options['action']):
         if options['action'].__name__ == '<lambda>':
             l = str(base64.b64encode(marshal.dumps(options['action'].__code__)), 'ASCII')
@@ -443,17 +460,17 @@ __code__= types.FunctionType(marshal.loads(base64.b64decode(bytearray(\''''+ l +
 def main(args):
     return __code__(args)
 '''
-        else:    
+        else:
             try:
                 exc = inspect.getsource(options['action'])
             except OSError:
                 raise ComposerError('Invalid argument "options" in "action" combinator', options['action'])
     elif 'action' in options and (isinstance(options['action'], str) or isinstance(options['action'],  dict)):
         exc = options['action']
-    
+
     if isinstance(exc, str):
         exc = { 'kind': 'python:3', 'code': exc }
-    
+
     composition = { 'type': 'action', 'name': name, '.combinator': lambda: combinators['action']}
     if exc is not None:
         composition['action'] = { 'exec': exc }
@@ -467,12 +484,12 @@ def parse(composition):
     ''' recursively deserialize composition '''
     if not isinstance(composition, dict):
         raise ComposerError('Invalid argument "composition" in "parse" combinator', composition)
-    
+
     combinator = composition['.combinator']() if '.combinator' in composition and callable(composition['.combinator']) else combinators[composition['type']]
 
     if not isinstance(combinator, dict):
         raise ComposerError('Invalid composition type in "parse" combinator', composition)
-    
+
     extended = { '.combinator': lambda : combinator }
     extended.update(composition)
     return visit(extended, lambda composition, _: composer.parse(composition))

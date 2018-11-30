@@ -37,7 +37,7 @@ This repository includes:
   [commands](docs/COMMANDS.md) for compiling and deploying compositions,
 * [documentation](docs), [examples](samples), and [tests](tests).
 
-## Installation 
+## Installation
 
 You need python3.6 installed on your system.
 
