@@ -61,7 +61,7 @@ install:
   - easy_install --version
   - pip --version
   - tox --version
-  - source ./travis/setup.sh
+  - ./travis/setup.sh
 script:
   - tox -v
 after_failure:
