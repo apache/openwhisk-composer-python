@@ -16,9 +16,9 @@
 # limitations under the License.
 #
 -->
-# ibm-functions-composer
+# composer-python
 
-[![Build Status](https://travis-ci.org/ibm-functions/composer-python.svg?branch=master)](https://travis-ci.org/ibm-functions/composer-python)
+[![Build Status](https://travis-ci.org/apache/incubator-openwhisk-composer-python.svg?branch=master)](https://travis-ci.org/apache/incubator-openwhisk-composer-python)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Join
 Slack](https://img.shields.io/badge/join-slack-9B69A0.svg)](http://slack.openwhisk.org/)
@@ -44,7 +44,7 @@ You need python3.6 installed on your system.
 ### From github
 
 ```bash
-$ git clone https://github.com/ibm-functions/composer-python.git
+$ git clone https://github.com/apache/incubator-openwhisk-composer-python.git
 $ cd composer-python
 $ pip3 install -e .
 $ pycompose -h
@@ -55,9 +55,9 @@ usage: pydeploy composition composition.json [flags]
 
 ### From PyPi (**Not available yet**)
 
-Composer is distributed on [PyPi](https://pypi.org/). To install this package, use `pip`:
+Composer will eventually be distributed on [PyPi](https://pypi.org/). Once it is available, to install this package, use `pip`:
 ```
-$ pip3 install ibm-functions-composer
+$ pip3 install openwhisk-composer
 ```
 Shell embeds the Composer package, so there is no need to install
 Composer for Python explicitly when using Shell.
