@@ -32,6 +32,7 @@ env:
     - IGNORE_CERTS=true
   matrix:
     - TOXENV=check
+
 matrix:
   include:
     # - python: '2.7'
@@ -68,6 +69,8 @@ after_failure:
   - more .tox/log/* | cat
   - more .tox/*/log/* | cat
 notifications:
-  email:
-    on_success: never
-    on_failure: always
+  email: false
+  webhooks:
+    urls:
+      # travis2slack webhook to enable DMs on openwhisk-team.slack.com to PR authors with TravisCI results
+      secure: "coq5Z9fetlW7kTfdn5orA2NNFYD6D3T7DWvFVGgFnmMXphIO6gHoN+fTDyDnQYs1GRgBL4fEgFcHaDhysJBAdXfQ0PFWyc4aBT+KSnc8SUWZPhqaM84Uwea0CyaZaupKbmWM3JFipLh+SBXhhD8rmpi0N57YTSKgIPmGylO/WcaO8fE6K/JRy4/KISD03nQHmTsXgtZ1bmM9+Yzimd4zBBURMpQKp72vHnvy35G/iP4D9LmbzHrfDocdhjI1FPPE0iDqMOLV/BMGeKtpVjkVj1EwizWR+YSfWcm6g1RiSh++hMMmtrOms7sXWyWVqoenxQcT3/ZqG3HuAIOhOu8TewMG937CHm9zMjIsJSwMbghAKceyxuWFjUmyLjrD91n+UxfyqVwaMXyIEqcMUarKt7tjgohXL+datFwgC41PGS8CukLfu5NkZQ/nEWiQ523pKKp3qfL9G3rTXpoJ8w73BSKtE8HPmP1oT0djDQ36oxhLx1dCLx+XAY9QFwp/KY2VYHAiYdc6pqtm3u9rcEAlXxwW1kpYsgx2xctE6Bwi5ukwT+p66QQwGzjXeUxz9FdjmXgVuVoIVUywkEpgRsuPm7yXWbpHrxHAOl+bq55BsSvyS6YHAtVJaD2q6W4etodF5uH6p5bwTMKxvkRClh5dfYWl9IZpQ9djQN0n3M7Cz+c="
