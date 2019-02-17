@@ -79,7 +79,7 @@ def main():
 
     except Exception as err:
         print(err)
-        sys,exit(422 - 256) # Unprocessable Entity
+        sys.exit(422 - 256) # Unprocessable Entity
 
 
     options = { 'ignore_certs': args.insecure }
@@ -92,7 +92,7 @@ def main():
         composition['name'] = composer.parse_action_name(args.name)
     except Exception as err:
         print(err)
-        sys,exit(400 - 256) # Bad Request
+        sys.exit(400 - 256) # Bad Request
 
     try:
         actions = conductor.openwhisk(options).compositions.deploy(composition, args.overwrite)
