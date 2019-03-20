@@ -67,7 +67,8 @@ def synthesize(composition): # dict
     annotations = [
         { 'key': 'conductor', 'value': str(composition['ast']) },
         { 'key': 'composerVersion', 'value': composition['version'] },
-        { 'key': 'conductorVersion', 'value': __version__ }
+        { 'key': 'conductorVersion', 'value': __version__ },
+        { 'key': 'provide-api-key', 'value': True }
     ]
 
     return { 'name': composition['name'], 'action': { 'exec': { 'kind': 'python:3', 'code':code }, 'annotations': annotations } }
