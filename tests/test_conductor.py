@@ -101,6 +101,7 @@ class TestBlockingInvocations:
     def test_action_true(self):
         ''' action must return true '''
         activation = invoke(composer.action('isNotOne'), { 'n': 0 })
+        print(activation)
         assert activation['response']['result'] == { 'value': True }
 
     def test_action_false(self):
