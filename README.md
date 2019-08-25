@@ -18,15 +18,15 @@
 -->
 # composer-python
 
-[![Build Status](https://travis-ci.org/apache/incubator-openwhisk-composer-python.svg?branch=master)](https://travis-ci.org/apache/incubator-openwhisk-composer-python)
+[![Build Status](https://travis-ci.org/apache/openwhisk-composer-python.svg?branch=master)](https://travis-ci.org/apache/openwhisk-composer-python)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Join
 Slack](https://img.shields.io/badge/join-slack-9B69A0.svg)](http://slack.openwhisk.org/)
 
-This repository provides a Python library for [Composer](https://github.com/apache/incubator-openwhisk-composer). For convenience, the Composer documentation is repeated below using Python bindings instead of JavaScript.
+This repository provides a Python library for [Composer](https://github.com/apache/openwhisk-composer). For convenience, the Composer documentation is repeated below using Python bindings instead of JavaScript.
 
 Composer is a new programming model for composing cloud functions built on
-[Apache OpenWhisk](https://github.com/apache/incubator-openwhisk). With
+[Apache OpenWhisk](https://github.com/apache/openwhisk). With
 Composer, developers can build even more serverless applications including using
 it for IoT, with workflow orchestration, conversation services, and devops
 automation, to name a few examples.
@@ -44,7 +44,7 @@ You need python3.6 installed on your system.
 ### From github
 
 ```bash
-$ git clone https://github.com/apache/incubator-openwhisk-composer-python.git
+$ git clone https://github.com/apache/openwhisk-composer-python.git
 $ cd composer-python
 $ pip3 install -e .
 $ pycompose -h
@@ -145,9 +145,5 @@ actions.
 
 Compositions are implemented by means of OpenWhisk conductor actions. The
 [documentation of conductor
-actions](https://github.com/apache/incubator-openwhisk/blob/master/docs/conductors.md)
+actions](https://github.com/apache/openwhisk/blob/master/docs/conductors.md)
 explains execution traces in greater details.
-
-# Disclaimer
-
-Apache OpenWhisk Composer Python is an effort undergoing incubation at The Apache Software Foundation (ASF), sponsored by the Apache Incubator. Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects. While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.
