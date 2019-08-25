@@ -110,9 +110,8 @@ class TestBlockingInvocations:
 
     def test_action_activation_id(self):
         ''' action must return activationId '''
-        activation = invoke(composer.asynchronous('isNotOne'), { 'n': 1 })
-        print(activation)
-        assert 'activationId' in activation['response']['result']
+        activation = invoke(composer.asynchronous('isNotOne'), { 'n': 1 }, False)
+        assert 'activationId' in activation
 
 
     def test_parse_action_name(self):
