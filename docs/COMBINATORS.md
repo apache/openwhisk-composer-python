@@ -113,7 +113,7 @@ composer.action('hello', { 'action': 'lambda env, args: { "message": "Hello ' + 
 
 ## Function
 
-`composer.function(fun)` is a composition with a single Python function _fun_. It applies the specified function to the environment and the input parameter object for the composition.
+`composer.function(fun)` is a composition with a single Python function _fun_. It applies the specified function to the environment, and the input parameter object for the composition.
  - If the function returns a value of type `function`, the composition returns an error object.
  - If the function throws an exception, the composition returns an error object. The exception is logged as part of the conductor action invocation.
  - If the function returns a value of type other than function, the value is first converted to a string using `str` followed by `json.loads`. If the resulting JSON value is not a JSON dictionary, the JSON value is then wrapped into a `{ value }` dictionary. The composition returns the final JSON dictionary. (**Not supported yet**)
@@ -301,7 +301,7 @@ The _finalizer_ is invoked in sequence after _body_ even if _body_ returns an er
 
 `composer.retain(body)` runs _body_ on the input parameter object producing an object with two fields `params` and `result` such that `params` is the input parameter object of the composition and `result` is the output parameter object of _body_.
 
-If _body_ fails, the output of the `retain` combinator is only the error object (i.e., the input parameter object is not preserved). In constrast, the `retain_catch` combinator always outputs `{ params, result }`, even if `result` is an error result.
+If _body_ fails, the output of the `retain` combinator is only the error object (i.e., the input parameter object is not preserved). In contrast, the `retain_catch` combinator always outputs `{ params, result }`, even if `result` is an error result.
 
 
 ## Merge
