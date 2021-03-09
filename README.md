@@ -80,7 +80,7 @@ Compositions compose actions using [combinator](docs/COMBINATORS.md) methods. Th
 implement the typical control-flow constructs of a sequential imperative
 programming language. This example composition composes three actions named
 `authenticate`, `success`, and `failure` using the `composer.when` combinator,
-which implements the usual conditional construct. It take three actions (or
+which implements the usual conditional construct. It takes three actions (or
 compositions) as parameters. It invokes the first one and, depending on the
 result of this invocation, invokes either the second or third action.
 

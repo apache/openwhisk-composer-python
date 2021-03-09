@@ -22,7 +22,7 @@ import json
 import composer
 
 def main():
-    parser = argparse.ArgumentParser(description='comppile compositions', prog='pycompose', usage='%(prog)s composition.py command [flags]')
+    parser = argparse.ArgumentParser(description='compile compositions', prog='pycompose', usage='%(prog)s composition.py command [flags]')
     parser.add_argument('file', metavar='composition', type=str, help='the composition')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s '+ composer.__version__)
     parser.add_argument('--ast', action='store_true', help='output ast')
