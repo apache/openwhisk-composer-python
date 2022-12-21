@@ -20,12 +20,12 @@ sudo: required
 dist: trusty
 services:
   - docker
-addons:
-  apt:
-    sources:
-    - sourceline: 'ppa:deadsnakes/ppa'
-    packages:
-    - python3.6
+# addons:
+#   apt:
+#     sources:
+#     - sourceline: 'ppa:deadsnakes/ppa'
+#     packages:
+#     - python3.6
 
 env:
   global:
@@ -47,9 +47,9 @@ matrix:
     # - python: '3.5'
     #   env:
     #     - TOXENV=py35,report,coveralls
-    - python: '3.6'
-      env:
-        - TOXENV=py36
+    # - python: '3.6'
+    #  env:
+    #    - TOXENV=py36
     # - python: 'pypy-5.4'
     #   env:
     #     - TOXENV=pypy,report,coveralls
@@ -57,14 +57,15 @@ before_install:
   - python --version
   - uname -a
 install:
-  - sudo pip install tox
-  - virtualenv --version
-  - easy_install --version
-  - pip --version
-  - tox --version
-  - ./travis/setup.sh
+  # - sudo pip install tox
+  # - virtualenv --version
+  # - easy_install --version
+  # - pip --version
+  # - tox --version
+  # - ./travis/setup.sh
 script:
-  - tox -v
+  # - tox -v
+  - echo "tests disabled"
 after_failure:
   - more .tox/log/* | cat
   - more .tox/*/log/* | cat
