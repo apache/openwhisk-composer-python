@@ -74,7 +74,7 @@ def main():
         if args.annotation is not None:
             composition['annotations'].extend([keyValue(a[0]) for a in args.annotation])
 
-        if args.annotation is not None:
+        if args.annotation_file is not None:
             composition['annotations'].extend([keyValueFromFile(a[0]) for a in args.annotation_file])
 
     except Exception as err:
