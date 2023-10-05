@@ -119,7 +119,7 @@ def main():
                 [annotation_key_value(a[0]) for a in args.annotation]
             )
 
-        if args.annotation is not None:
+        if args.annotation_file is not None:
             composition["annotations"].extend(
                 [annotation_key_value_file(a[0]) for a in args.annotation_file]
             )
