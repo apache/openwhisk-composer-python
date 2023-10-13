@@ -72,7 +72,7 @@ def synthesize(composition): # dict
         *composition["annotations"]
     ]
 
-    return { 'name': composition['name'], 'action': { 'exec': { 'kind': 'python:3', 'code':code }, 'annotations': annotations } }
+    return { 'name': composition['name'], 'action': { 'exec': { 'kind': 'python:3', 'code':code }, 'annotations': annotations, 'limits': composition['limits'] } }
 
 def openwhisk(options):
     ''' return enhanced openwhisk client capable of deploying compositions '''
